@@ -1,4 +1,5 @@
 import mujoco
+import numpy as np
 
 from revolve2.simulation.scene import ControlInterface, JointHinge, UUIDKey
 
@@ -47,4 +48,7 @@ class ControlInterfaceImpl(ControlInterface):
 
     def get_touch_sensor(self, joint_hinge: JointHinge) -> float:
         return self._data.sensor('mbs1/sensor_' + str(joint_hinge.uuid)).data[0]
+
+    def get_actuator_force(self) -> float:
+        return sum(np.clip(self._data.actuator_force, 0, None))
 

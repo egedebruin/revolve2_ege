@@ -22,3 +22,6 @@ class ControlInterface(ABC):
     def get_touch_sensor(self, joint_hinge: JointHinge) -> float:
         pass
 
+    @abstractmethod
+    def get_actuator_force(self) -> float:
+        pass

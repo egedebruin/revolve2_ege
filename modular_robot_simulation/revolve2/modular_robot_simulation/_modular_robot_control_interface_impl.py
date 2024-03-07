@@ -45,3 +45,6 @@ class ModularRobotControlInterfaceImpl(ModularRobotControlInterface):
         return self._simulation_control.get_touch_sensor(
             self._body_to_multi_body_system_mapping.active_hinge_to_joint_hinge[UUIDKey(active_hinge)])
 
+    def get_actuator_force(self) -> float:
+        return self._simulation_control.get_actuator_force()
+

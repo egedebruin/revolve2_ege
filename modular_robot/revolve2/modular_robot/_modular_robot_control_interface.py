@@ -18,3 +18,7 @@ class ModularRobotControlInterface(ABC):
     @abstractmethod
     def get_touch_sensor(self, active_hinge: ActiveHinge) -> float:
         pass
+
+    @abstractmethod
+    def get_actuator_force(self) -> float:
+        pass

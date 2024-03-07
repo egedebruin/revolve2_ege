@@ -23,9 +23,9 @@ NU = 5/2 # Smoothness parameter for Matern kernel (Low is rigid, high is smooth)
 LENGTH_SCALE = 0.2 # Also affects smoothness, but I'm not sure how (low is rigid, high is smooth (is it though??))
 NEIGHBOUR_SCALE = 0.001
 
-POPULATION_SIZE = 20
-OFFSPRING_SIZE = 10
+POPULATION_SIZE = 50
+OFFSPRING_SIZE = 20
 NUM_GENERATIONS = 500
 
-CROSSOVER = False
+CROSSOVER = True
 INITIAL_POPULATION_FROM_DATABASE = False
