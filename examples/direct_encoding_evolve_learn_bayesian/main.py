@@ -242,8 +242,6 @@ def run_experiment(dbengine: Engine) -> None:
     population = Population(
         individuals=individuals
     )
-
-    # Finish the zeroth generation and save it to the database.
     generation = Generation(
         experiment=experiment, generation_index=0, population=population
     )
@@ -269,10 +267,8 @@ def run_experiment(dbengine: Engine) -> None:
                     population.individuals[parent2_i].genotype,
                     rng,
                 )
-                child_genotype_1 = child_genotype_1.mutate(rng)
-                child_genotype_2 = child_genotype_2.mutate(rng)
-                offspring_genotypes.append(child_genotype_1)
-                offspring_genotypes.append(child_genotype_2)
+                offspring_genotypes.append(child_genotype_1.mutate(rng))
+                offspring_genotypes.append(child_genotype_2.mutate(rng))
         else:
             parents = select_parent(rng, population, config.OFFSPRING_SIZE)
             offspring_genotypes = []
@@ -284,21 +280,15 @@ def run_experiment(dbengine: Engine) -> None:
         offspring_fitnesses = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine)
 
         # Make an intermediate offspring population.
-        individuals = []
-        for genotype, fitness in zip(offspring_genotypes, offspring_fitnesses):
-            individual = Individual(genotype=genotype, fitness=fitness)
-            individuals.append(individual)
-        offspring_population = Population(
-            individuals=individuals
-        )
-
+        individuals = [Individual(genotype=genotype, fitness=fitness) for genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
         # Create the next population by selecting survivors.
         population = select_survivors(
             rng,
             population,
-            offspring_population,
+            Population(
+                individuals=individuals
+            ),
         )
-
         # Make it all into a generation and save it to the database.
         generation = Generation(
             experiment=experiment,
@@ -339,6 +329,7 @@ def learn_genotype(genotype, evaluator):
         pbounds['amplitude_' + str(key)] = [0, 1]
         pbounds['phase_' + str(key)] = [0, 1]
         pbounds['touch_weight_' + str(key)] = [0, 1]
+        pbounds['neighbour_touch_weight_' + str(key)] = [0, 1]
         pbounds['sensor_phase_offset_' + str(key)] = [0, 1]
 
     optimizer = BayesianOptimization(
@@ -353,7 +344,7 @@ def learn_genotype(genotype, evaluator):
     best_fitness = 0
     best_learn_genotype = None
     generations = []
-    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 4 * len(genotype.brain.keys()))
+    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 5 * len(genotype.brain.keys()))
     best_point = {}
     for i in range(config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES):
         logging.info(f"Learn generation {i + 1} / {config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES}.")
@@ -364,8 +355,9 @@ def learn_genotype(genotype, evaluator):
                 next_point['amplitude_' + str(key)] = lhs[i][j]
                 next_point['phase_' + str(key)] = lhs[i][j + 1]
                 next_point['touch_weight_' + str(key)] = lhs[i][j + 2]
-                next_point['sensor_phase_offset_' + str(key)] = lhs[i][j + 3]
-                j += 4
+                next_point['neighbour_touch_weight_' + str(key)] = lhs[i][j + 3]
+                next_point['sensor_phase_offset_' + str(key)] = lhs[i][j + 4]
+                j += 5
             next_point = dict(sorted(next_point.items()))
         else:
             next_point = optimizer.suggest(utility)
@@ -388,6 +380,7 @@ def learn_genotype(genotype, evaluator):
                 [next_point['amplitude_' + str(brain_uuid)],
                  next_point['phase_' + str(brain_uuid)],
                  next_point['touch_weight_' + str(brain_uuid)],
+                 next_point['neighbour_touch_weight_' + str(brain_uuid)],
                  next_point['sensor_phase_offset_' + str(brain_uuid)]]
             )
         robot = new_learn_genotype.develop()
@@ -408,14 +401,12 @@ def learn_genotype(genotype, evaluator):
                 LearnIndividual(genotype=new_learn_genotype, fitness=fitness)
             ]
         )
-
         # Make it all into a generation and save it to the database.
         generation = LearnGeneration(
             genotype=genotype,
             generation_index=i,
             learn_population=population,
         )
-
         generations.append(generation)
     genotype.brain = best_learn_genotype.brain
     return best_fitness, generations

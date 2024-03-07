@@ -8,7 +8,7 @@ from sqlalchemy.engine import Connection
 
 import uuid
 
-from brain import SineBrain
+from sine_brain import SineBrain
 import config
 from revolve2.modular_robot.body.base import ActiveHinge
 from revolve2.modular_robot.body.v1 import BodyV1
@@ -57,18 +57,21 @@ class BrainGenotype(orm.MappedAsDataclass):
         amplitudes = []
         phases = []
         touch_weights = []
+        neighbour_touch_weights = []
         sensor_phase_offset = []
         for active_hinge in active_hinges:
             amplitudes.append(self.brain[active_hinge.map_uuid][0])
             phases.append(self.brain[active_hinge.map_uuid][1] * 2 * math.pi)
             touch_weights.append(self.brain[active_hinge.map_uuid][2] * config.FREQUENCY - config.FREQUENCY)
-            sensor_phase_offset.append(self.brain[active_hinge.map_uuid][3])
+            neighbour_touch_weights.append(self.brain[active_hinge.map_uuid][3] * config.FREQUENCY - config.FREQUENCY)
+            sensor_phase_offset.append(self.brain[active_hinge.map_uuid][4] * 2 * math.pi)
 
         brain = SineBrain(
             active_hinges=active_hinges,
             amplitudes=amplitudes,
             phases=phases,
             touch_weights=touch_weights,
+            neighbour_touch_weights=neighbour_touch_weights,
             sensor_phase_offset=sensor_phase_offset
         )
 
