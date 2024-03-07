@@ -10,3 +10,4 @@
 -r ./examples/robot_bodybrain_ea_database/requirements.txt
 -r ./examples/robot_brain_cmaes_database/requirements.txt
 -r ./examples/simple_ea_xor_database/requirements.txt
+-r ./examples/direct_encoding_evolve_learn_bayesian/requirements.txt
