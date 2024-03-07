@@ -44,3 +44,7 @@ class ControlInterfaceImpl(ControlInterface):
         self._data.ctrl[maybe_hinge_joint_mujoco.ctrl_index_position] = position
         # Set velocity target
         self._data.ctrl[maybe_hinge_joint_mujoco.ctrl_index_velocity] = 0.0
+
+    def get_touch_sensor(self, joint_hinge: JointHinge) -> float:
+        return self._data.sensor('mbs1/sensor_' + str(joint_hinge.uuid)).data[0]
+

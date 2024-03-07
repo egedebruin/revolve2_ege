@@ -14,3 +14,7 @@ class ModularRobotControlInterface(ABC):
         :param active_hinge: The active hinge to set the target for.
         :param target: The target to set.
         """
+
+    @abstractmethod
+    def get_touch_sensor(self, active_hinge: ActiveHinge) -> float:
+        pass

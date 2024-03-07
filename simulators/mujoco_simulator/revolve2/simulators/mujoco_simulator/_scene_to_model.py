@@ -146,6 +146,21 @@ def scene_to_model(
 
         # Add actuation to joints
         for joint, name in joints_and_names:
+            multi_body_system_mjcf.find(namespace="body", identifier=name.replace('joint', 'link')).add(
+                "site",
+                name="site_" + name,
+                pos=[0.08, 0, 0],
+                size=[0.035, 0.035, 0.035],
+                type="box",
+                rgba=[0.0, 0.0, 0.0, 0.0]
+            )
+
+            multi_body_system_mjcf.sensor.add(
+                "touch",
+                name="sensor_" + str(joint.uuid),
+                site="site_" + name,
+            )
+
             # Add rotor inertia to joints. This value is arbitrarily chosen and appears stable enough.
             # Fine-tuning the armature value might be needed later.
             multi_body_system_mjcf.find(

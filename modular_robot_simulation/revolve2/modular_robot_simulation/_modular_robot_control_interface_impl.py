@@ -40,3 +40,8 @@ class ModularRobotControlInterfaceImpl(ModularRobotControlInterface):
             ],
             np.clip(target, a_min=-active_hinge.range, a_max=active_hinge.range),
         )
+
+    def get_touch_sensor(self, active_hinge: ActiveHinge) -> float:
+        return self._simulation_control.get_touch_sensor(
+            self._body_to_multi_body_system_mapping.active_hinge_to_joint_hinge[UUIDKey(active_hinge)])
+

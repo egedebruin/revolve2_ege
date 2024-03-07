@@ -15,7 +15,7 @@ class BrickV1(Brick):
         """
         super().__init__(
             rotation=rotation,
-            bounding_box=Vector3([0.06288625, 0.06288625, 0.0603]),
+            bounding_box=Vector3([0.0603, 0.0603, 0.0603]),
             mass=0.030,
-            child_offset=0.06288625 / 2.0,
+            child_offset=0.0603 / 2.0,
         )

@@ -14,6 +14,8 @@ class Brick(Module):
     FRONT = 0
     RIGHT = 1
     LEFT = 2
+    UP = 3
+    DOWN = 4
 
     _mass: float
     _bounding_box: Vector3
@@ -37,14 +39,27 @@ class Brick(Module):
             self.FRONT: AttachmentPoint(
                 offset=Vector3([child_offset, 0.0, 0.0]),
                 orientation=Quaternion.from_eulers([0.0, 0.0, 0.0]),
+                rotate=False
             ),
             self.LEFT: AttachmentPoint(
                 offset=Vector3([child_offset, 0.0, 0.0]),
                 orientation=Quaternion.from_eulers([0.0, 0.0, math.pi / 2.0]),
+                rotate=False
             ),
             self.RIGHT: AttachmentPoint(
                 offset=Vector3([child_offset, 0.0, 0.0]),
                 orientation=Quaternion.from_eulers([0.0, 0.0, math.pi / 2.0 * 3]),
+                rotate=False
+            ),
+            self.UP: AttachmentPoint(
+                offset=Vector3([child_offset, 0.0, 0.0]),
+                orientation=Quaternion.from_eulers([0.0, math.pi / 2.0 * 3, 0.0]),
+                rotate=True
+            ),
+            self.DOWN: AttachmentPoint(
+                offset=Vector3([child_offset, 0.0, 0.0]),
+                orientation=Quaternion.from_eulers([0.0, math.pi / 2.0, 0.0]),
+                rotate=True
             ),
         }
         self._mass = mass
@@ -104,6 +119,42 @@ class Brick(Module):
         :param module: The Module.
         """
         self.set_child(module, self.LEFT)
+
+    @property
+    def up(self) -> Module | None:
+        """
+        Get the module attached to the up of the brick.
+
+        :returns: The attached module.
+        """
+        return self.children[self.UP]
+
+    @up.setter
+    def up(self, module: Module) -> None:
+        """
+        Set the module attached to the up of the brick.
+
+        :param module: The module to attach.
+        """
+        self.set_child(module, self.UP)
+
+    @property
+    def down(self) -> Module | None:
+        """
+        Get the module attached to the down of the brick.
+
+        :returns: The attached module.
+        """
+        return self.children[self.DOWN]
+
+    @down.setter
+    def down(self, module: Module) -> None:
+        """
+        Set the module attached to the down of the brick.
+
+        :param module: The module to attach.
+        """
+        self.set_child(module, self.DOWN)
 
     @property
     def mass(self) -> float:

@@ -113,6 +113,7 @@ celerybeat.pid
 
 # Environments
 .env
+/.idea
 
 # Spyder project settings
 .spyderproject

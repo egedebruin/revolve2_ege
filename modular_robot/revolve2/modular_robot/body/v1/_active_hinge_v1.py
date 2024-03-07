@@ -33,7 +33,7 @@ class ActiveHingeV1(ActiveHinge):
             joint_offset=0.0119,
             static_friction=1.0,
             dynamic_friction=1.0,
-            armature=0.002,
+            armature=0.02,
             pid_gain_p=5.0,
             pid_gain_d=0.05,
             child_offset=0.0583 / 2 + 0.002,

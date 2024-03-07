@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pyrr import Quaternion, Vector3
 
 from .._attachment_point import AttachmentPoint
@@ -11,6 +13,8 @@ class ActiveHinge(Module):
     """An Active Hinge."""
 
     ATTACHMENT = 0
+
+    _map_uuid: UUID
 
     _range: float
     _effort: float
@@ -99,6 +103,7 @@ class ActiveHinge(Module):
             self.ATTACHMENT: AttachmentPoint(
                 offset=Vector3([child_offset, 0.0, 0.0]),
                 orientation=Quaternion.from_eulers([0.0, 0.0, 0.0]),
+                rotate=False
             ),
         }
 
@@ -123,6 +128,24 @@ class ActiveHinge(Module):
         :param module: The Module.
         """
         self.set_child(module, self.ATTACHMENT)
+
+    @property
+    def map_uuid(self) -> UUID | None:
+        """
+        Get the module attached to this hinge.
+
+        :returns: The attached module.
+        """
+        return self._map_uuid
+
+    @map_uuid.setter
+    def map_uuid(self, new_uuid: UUID) -> None:
+        """
+        Set the module attached to this hinge.
+
+        :param new_uuid: The uuid to map to brain
+        """
+        self._map_uuid = new_uuid
 
     @property
     def static_friction(self) -> float:

@@ -17,3 +17,8 @@ class ControlInterface(ABC):
         :param position: The position target.
         """
         pass
+
+    @abstractmethod
+    def get_touch_sensor(self, joint_hinge: JointHinge) -> float:
+        pass
+
