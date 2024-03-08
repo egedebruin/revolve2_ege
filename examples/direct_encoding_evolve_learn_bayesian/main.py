@@ -202,7 +202,7 @@ def run_experiment(dbengine: Engine) -> None:
     logging.info("Start experiment")
 
     # Set up the random number generator.
-    rng_seed = 1709899721771762 % 2 ** 32
+    rng_seed = seed_from_time() % 2**32
     rng = make_rng(rng_seed)
 
     # Create and save the experiment instance.

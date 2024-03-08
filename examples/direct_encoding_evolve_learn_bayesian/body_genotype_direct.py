@@ -104,9 +104,12 @@ class ModuleGenotype:
         return index
 
     def check_for_brains(self):
-        uuids = set()
+        uuids = []
         for module in self.children.values():
-            uuids = module.check_for_brains() | uuids
+            recursive_uuids = module.check_for_brains()
+            for recursive_uuid in recursive_uuids:
+                if recursive_uuid not in uuids:
+                    uuids.append(recursive_uuid)
         return uuids
 
     def switch_brain(self, rng: np.random.Generator, brain: BrainGenotype):
@@ -202,7 +205,8 @@ class HingeGenotype(ModuleGenotype):
 
     def check_for_brains(self):
         uuids = super().check_for_brains()
-        uuids.add(self.brain_index)
+        if self.brain_index not in uuids:
+            uuids.append(self.brain_index)
 
         return uuids
 
