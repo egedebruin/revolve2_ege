@@ -71,7 +71,6 @@ class SineBrainInstance(BrainInstance):
                           dt * touch_sensor * touch_weight * math.sin(self.t[i] + sensor_phase_offset) +
                           dt * neighbour_touch * neighbour_touch_weight * math.sin(self.t[i] + sensor_phase_offset))
             i += 1
-        print(control_interface.get_actuator_force())
 
 
 class SineBrain(Brain):

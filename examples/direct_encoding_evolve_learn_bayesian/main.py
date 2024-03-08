@@ -340,7 +340,6 @@ def learn_genotype(genotype, evaluator):
     optimizer.set_gp_params(alpha=config.ALPHA, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds=(config.LENGTH_SCALE - 0.01, config.LENGTH_SCALE + 0.01)))
     utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
 
-    logging.info("Start learning process.")
     best_fitness = 0
     best_learn_genotype = None
     generations = []

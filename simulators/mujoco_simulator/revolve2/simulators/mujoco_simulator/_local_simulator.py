@@ -61,8 +61,6 @@ class LocalSimulator(Simulator):
         :returns: List of simulation states in ascending order of time.
         :raises Exception: If manual control is selected, but headless is enabled.
         """
-        logging.info("Starting simulation batch with MuJoCo.")
-
         control_step = 1.0 / batch.parameters.control_frequency
         sample_step = (
             None
@@ -119,7 +117,5 @@ class LocalSimulator(Simulator):
                 )
                 for scene_index, scene in enumerate(batch.scenes)
             ]
-
-        logging.info("Finished batch.")
 
         return results

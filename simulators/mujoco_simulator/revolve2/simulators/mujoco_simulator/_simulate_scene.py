@@ -44,8 +44,6 @@ def simulate_scene(
     :param fast_sim: If fancy rendering is disabled.
     :returns: The results of simulation. The number of returned states depends on `sample_step`.
     """
-    logging.info(f"Simulating scene {scene_id}")
-
     model, mapping = scene_to_model(
         scene, simulation_timestep, cast_shadows=cast_shadows, fast_sim=fast_sim
     )
@@ -153,7 +151,5 @@ def simulate_scene(
         simulation_states.append(
             SimulationStateImpl(data=data, abstraction_to_mujoco_mapping=mapping)
         )
-
-    logging.info(f"Scene {scene_id} done.")
 
     return simulation_states

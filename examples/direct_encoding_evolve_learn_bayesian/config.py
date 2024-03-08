@@ -1,6 +1,6 @@
 """Configuration parameters for this example."""
 
-DATABASE_FILE = "database_sine_touch_rugged_kickstart_new_bo.sqlite"
+DATABASE_FILE = "database.sqlite"
 PREVIOUS_DATABASE_FILE = "test2_short_no_updown.sqlite"
 NUM_REPETITIONS = 1
 NUM_SIMULATORS = 1
