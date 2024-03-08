@@ -143,8 +143,7 @@ class ModuleGenotype:
 
             new_brain_chooser = rng.random()
             if new_brain_chooser < config.NEW_HINGE_NEW_BRAIN:
-                uuid = brain.add_new()
-                module.brain_index = uuid
+                module.brain_index = brain.add_new()
             else:
                 module.brain_index = rng.choice(list(brain.brain.keys()))
 

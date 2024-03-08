@@ -1,7 +1,6 @@
 """Main script for the example."""
 import concurrent.futures
 import logging
-import random
 
 from bayes_opt import BayesianOptimization, UtilityFunction
 from sklearn.gaussian_process.kernels import Matern
@@ -30,7 +29,7 @@ from revolve2.experimentation.optimization.ea import population_management, sele
 from revolve2.experimentation.rng import make_rng, seed_from_time
 
 
-def latin_hypercube(n, k):
+def latin_hypercube(n, k, rng: np.random.Generator):
     """
     Generate Latin Hypercube samples.
 
@@ -42,7 +41,7 @@ def latin_hypercube(n, k):
     numpy.ndarray: Array of Latin Hypercube samples of shape (n, k).
     """
     # Generate random permutations for each dimension
-    perms = [random.sample(range(n), n) for _ in range(k)]
+    perms = [rng.permutation(n) for _ in range(k)]
 
     # Generate the samples
     samples = np.empty((n, k))
@@ -53,7 +52,7 @@ def latin_hypercube(n, k):
 
         # Assign values from each interval to the samples
         for j in range(n):
-            samples[perms[i][j], i] = random.uniform(interval[j], interval[j+1])
+            samples[perms[i][j], i] = rng.uniform(interval[j], interval[j+1])
 
     return samples
 
@@ -203,7 +202,7 @@ def run_experiment(dbengine: Engine) -> None:
     logging.info("Start experiment")
 
     # Set up the random number generator.
-    rng_seed = seed_from_time() % 2 ** 32
+    rng_seed = 1709899721771762 % 2 ** 32
     rng = make_rng(rng_seed)
 
     # Create and save the experiment instance.
@@ -232,7 +231,7 @@ def run_experiment(dbengine: Engine) -> None:
     # Evaluate the initial population.
     logging.info("Evaluating initial population.")
 
-    initial_fitnesses = learn_population(genotypes=initial_genotypes, evaluator=evaluator, dbengine=dbengine)
+    initial_fitnesses = learn_population(genotypes=initial_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
 
     # Create a population of individuals, combining genotype with fitness.
     individuals = []
@@ -277,16 +276,16 @@ def run_experiment(dbengine: Engine) -> None:
                 offspring_genotypes.append(child_genotype)
 
         # Evaluate the offspring.
-        offspring_fitnesses = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine)
+        offspring_fitnesses = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
 
         # Make an intermediate offspring population.
-        individuals = [Individual(genotype=genotype, fitness=fitness) for genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
+        offspring_individuals = [Individual(genotype=genotype, fitness=fitness) for genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
         # Create the next population by selecting survivors.
         population = select_survivors(
             rng,
             population,
             Population(
-                individuals=individuals
+                individuals=offspring_individuals
             ),
         )
         # Make it all into a generation and save it to the database.
@@ -301,12 +300,12 @@ def run_experiment(dbengine: Engine) -> None:
             session.commit()
 
 
-def learn_population(genotypes, evaluator, dbengine):
+def learn_population(genotypes, evaluator, dbengine, rng):
     with concurrent.futures.ProcessPoolExecutor(
             max_workers=config.NUM_PARALLEL_PROCESSES
     ) as executor:
         futures = [
-            executor.submit(learn_genotype, genotype, evaluator)
+            executor.submit(learn_genotype, genotype, evaluator, rng)
             for genotype in genotypes
         ]
         result_fitnesses = []
@@ -322,7 +321,7 @@ def learn_population(genotypes, evaluator, dbengine):
     return result_fitnesses
 
 
-def learn_genotype(genotype, evaluator):
+def learn_genotype(genotype, evaluator, rng):
     pbounds = {}
 
     for key in genotype.brain.keys():
@@ -343,7 +342,7 @@ def learn_genotype(genotype, evaluator):
     best_fitness = 0
     best_learn_genotype = None
     generations = []
-    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 5 * len(genotype.brain.keys()))
+    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 5 * len(genotype.brain.keys()), rng)
     best_point = {}
     for i in range(config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES):
         logging.info(f"Learn generation {i + 1} / {config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES}.")
