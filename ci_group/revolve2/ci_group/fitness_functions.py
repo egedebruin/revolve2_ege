@@ -21,3 +21,12 @@ def xy_displacement(
         (begin_position.x - end_position.x) ** 2
         + (begin_position.y - end_position.y) ** 2
     )
+
+
+def forward_displacement(
+    begin_state: ModularRobotSimulationState, end_state: ModularRobotSimulationState
+) -> float:
+    begin_position = begin_state.get_pose().position
+    end_position = end_state.get_pose().position
+
+    return end_position.y - begin_position.y

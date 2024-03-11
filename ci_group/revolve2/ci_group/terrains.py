@@ -50,6 +50,31 @@ def gradient(size: Vector2 = Vector2([20.0, 20.0]), angle=0.0) -> Terrain:
     )
 
 
+def hills(length: float = 20.0, height=0.0, num_edges=100) -> Terrain:
+    size = Vector2([3.0, length])
+    heights = []
+    for i in range(num_edges):
+        row_height = []
+        for j in range(num_edges):
+            if j % (num_edges/20) == 0.0:
+                row_height.append(height)
+            else:
+                row_height.append(0)
+        heights.append(row_height)
+
+    return Terrain(
+        static_geometry=[
+            GeometryHeightmap(
+                pose=Pose(position=Vector3([0, size[1] - 0.5, 0])),
+                mass=0.0,
+                size=Vector3([size[0], size[1], height]),
+                base_thickness=0.1,
+                heights=heights,
+            )
+        ]
+    )
+
+
 def crater(
     size: tuple[float, float],
     ruggedness: float,

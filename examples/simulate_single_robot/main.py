@@ -6,7 +6,6 @@ from revolve2.experimentation.rng import make_rng_time_seed
 from revolve2.modular_robot import ModularRobot
 from revolve2.modular_robot.body import RightAngles
 from revolve2.modular_robot.body.v1 import BodyV1, ActiveHingeV1, BrickV1
-from revolve2.modular_robot.body.v2 import ActiveHingeV2, BodyV2, BrickV2
 from revolve2.modular_robot.brain.cpg import BrainCpgNetworkNeighborRandom
 from revolve2.modular_robot_simulation import ModularRobotScene, simulate_scenes
 from revolve2.simulators.mujoco_simulator import LocalSimulator
