@@ -41,8 +41,9 @@ class Evaluator:
         self._simulator = LocalSimulator(
             headless=headless, num_simulators=num_simulators
         )
-        # self._terrain = terrains.crater((10, 10), 0.2, 0, 0.1)
-        self._terrain = terrains.flat()
+        self._terrain = terrains.crater((10, 10), 0.2, 0, 0.1)
+        # self._terrain = terrains.flat()
+        # self._terrain = terrains.hills(height=0.3)
 
     def evaluate(
         self,
@@ -70,7 +71,7 @@ class Evaluator:
             scenes=scenes,
         )
 
-        return fitness_functions.xy_displacement(
+        return fitness_functions.forward_displacement(
                 scene_states[0][0].get_modular_robot_simulation_state(robot),
                 scene_states[0][-1].get_modular_robot_simulation_state(robot),
             )

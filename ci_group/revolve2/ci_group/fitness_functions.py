@@ -29,4 +29,7 @@ def forward_displacement(
     begin_position = begin_state.get_pose().position
     end_position = end_state.get_pose().position
 
+    if end_position.z < -1:
+        return 0.0
+
     return end_position.y - begin_position.y

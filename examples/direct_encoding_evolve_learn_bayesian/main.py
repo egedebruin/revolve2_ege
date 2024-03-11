@@ -340,7 +340,7 @@ def learn_genotype(genotype, evaluator, rng):
     optimizer.set_gp_params(alpha=config.ALPHA, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds=(config.LENGTH_SCALE - 0.01, config.LENGTH_SCALE + 0.01)))
     utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
 
-    best_fitness = 0
+    best_fitness = None
     best_learn_genotype = None
     generations = []
     lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 5 * len(genotype.brain.keys()), rng)
@@ -387,7 +387,7 @@ def learn_genotype(genotype, evaluator, rng):
         # Evaluate them.
         fitness = evaluator.evaluate(robot)
 
-        if fitness >= best_fitness:
+        if best_fitness is None or fitness >= best_fitness:
             best_fitness = fitness
             best_learn_genotype = new_learn_genotype
             best_point = next_point

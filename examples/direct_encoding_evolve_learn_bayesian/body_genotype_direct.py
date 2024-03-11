@@ -137,7 +137,7 @@ class ModuleGenotype:
 
     def choose_random_module(self, rng: np.random.Generator, brain: BrainGenotype):
         module_chooser = rng.random()
-        rotation = rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value])
+        rotation = rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value, RightAngles.DEG_270.value])
 
         if module_chooser < 0.5:
             module = BrickGenotype(rotation)
@@ -289,6 +289,9 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
 
         child1.body.children[parent_1_branch_chooser] = copy.deepcopy(parent2.body.children[parent_2_branch_chooser])
         child2.body.children[parent_2_branch_chooser] = copy.deepcopy(parent1.body.children[parent_1_branch_chooser])
+
+        child1.body.children[parent_1_branch_chooser].rotation = (
+            rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value, RightAngles.DEG_270.value]))
 
         return child1, child2
 
