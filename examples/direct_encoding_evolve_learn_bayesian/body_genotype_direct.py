@@ -271,7 +271,8 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
                 body.remove_node(node_to_remove)
 
             used_brains = body.check_for_brains()
-            brain.remove_unused(used_brains)
+            if config.CONTROLLERS == -1:
+                brain.remove_unused(used_brains)
         else:
             body.switch_brain(rng, brain)
         return BodyGenotypeDirect(body=body)
@@ -281,11 +282,14 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
 
     @staticmethod
     def crossover_body(parent1: 'BodyGenotypeDirect', parent2: 'BodyGenotypeDirect', rng: np.random.Generator):
-        parent_1_branch_chooser = rng.choice(list(parent1.body.children))
-        parent_2_branch_chooser = rng.choice(list(parent2.body.children))
-
         child1 = copy.deepcopy(parent1)
         child2 = copy.deepcopy(parent2)
+
+        if len(parent1.body.children) == 0 or len(parent2.body.children) == 0:
+            return child1, child2
+
+        parent_1_branch_chooser = rng.choice(list(parent1.body.children))
+        parent_2_branch_chooser = rng.choice(list(parent2.body.children))
 
         child1.body.children[parent_1_branch_chooser] = copy.deepcopy(parent2.body.children[parent_2_branch_chooser])
         child2.body.children[parent_2_branch_chooser] = copy.deepcopy(parent1.body.children[parent_1_branch_chooser])

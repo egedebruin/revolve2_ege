@@ -72,6 +72,9 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
         """
         child1, child2 = BodyGenotypeDirect.crossover_body(parent1, parent2, rng)
 
+        if config.CONTROLLERS != -1:
+            return Genotype(body=child1.body, brain=parent1.brain), Genotype(body=child2.body, brain=parent2.brain)
+
         all_brains = {**parent1.brain, **parent2.brain}
 
         child_1_brain = {key: all_brains[key] for key in child1.get_brain_uuids() if key in all_brains}

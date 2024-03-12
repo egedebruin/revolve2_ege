@@ -42,8 +42,8 @@ class Evaluator:
             headless=headless, num_simulators=num_simulators
         )
         # self._terrain = terrains.crater((10, 10), 0.2, 0, 0.1)
-        # self._terrain = terrains.flat()
-        self._terrain = terrains.hills(height=0.35)
+        self._terrain = terrains.flat()
+        # self._terrain = terrains.hills(height=0.35)
 
     def evaluate(
         self,

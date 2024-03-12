@@ -1,6 +1,6 @@
 """Configuration parameters for this example."""
 
-DATABASE_FILE = "learn-1_controllers-1_hills.sqlite"
+DATABASE_FILE = "learn-1_controllers-1_flat.sqlite"
 PREVIOUS_DATABASE_FILE = "test2_short_no_updown.sqlite"
 NUM_REPETITIONS = 5
 NUM_SIMULATORS = 1
