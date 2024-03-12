@@ -38,6 +38,8 @@ class BrainGenotype(orm.MappedAsDataclass):
         brain = {}
         for i in range(number_of_brains):
             new_uuid = uuid.uuid4()
+            if config.CONTROLLERS != -1:
+                new_uuid = config.BRAIN_UUID
             brain[new_uuid] = np.array([])
 
         return BrainGenotype(brain=brain)

@@ -1,4 +1,5 @@
 """Configuration parameters for this example."""
+import uuid
 
 DATABASE_FILE = "learn-1_controllers-1_flat.sqlite"
 PREVIOUS_DATABASE_FILE = "test2_short_no_updown.sqlite"
@@ -15,6 +16,7 @@ SWITCH_BRAIN = 0.5
 MAX_ADD_MODULES = 5
 MAX_DELETE_MODULES = 5
 CONTROLLERS = 1
+BRAIN_UUID = uuid.uuid4()
 
 LEARN_NUM_GENERATIONS = 0
 NUM_RANDOM_SAMPLES = 1
