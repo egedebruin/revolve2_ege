@@ -1,6 +1,6 @@
 """Configuration parameters for this example."""
 
-DATABASE_FILE = "learn-100_controllers-1_flat.sqlite"
+DATABASE_FILE = "learn-1_controllers-1_hills.sqlite"
 PREVIOUS_DATABASE_FILE = "test2_short_no_updown.sqlite"
 NUM_REPETITIONS = 5
 NUM_SIMULATORS = 1
@@ -16,8 +16,8 @@ MAX_ADD_MODULES = 5
 MAX_DELETE_MODULES = 5
 CONTROLLERS = 1
 
-LEARN_NUM_GENERATIONS = 90
-NUM_RANDOM_SAMPLES = 10
+LEARN_NUM_GENERATIONS = 0
+NUM_RANDOM_SAMPLES = 1
 KAPPA = 3  # Variation for Acquisition function (Low is exploitation, high is exploration)
 ALPHA = 0  # Sampling noise
 NU = 5/2  # Smoothness parameter for Matern kernel (Low is rigid, high is smooth)
