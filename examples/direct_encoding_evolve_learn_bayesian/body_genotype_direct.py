@@ -145,7 +145,7 @@ class ModuleGenotype:
             module = HingeGenotype(rotation)
 
             new_brain_chooser = rng.random()
-            if new_brain_chooser < config.NEW_HINGE_NEW_BRAIN:
+            if config.CONTROLLERS == -1 and new_brain_chooser < config.NEW_HINGE_NEW_BRAIN:
                 module.brain_index = brain.add_new()
             else:
                 module.brain_index = rng.choice(list(brain.brain.keys()))

@@ -31,8 +31,14 @@ class BrainGenotype(orm.MappedAsDataclass):
 
     @classmethod
     def initialize_brain(cls) -> 'BrainGenotype':
-        new_uuid = uuid.uuid4()
-        brain = {new_uuid: np.array([])}
+        number_of_brains = config.CONTROLLERS
+        if config.CONTROLLERS == -1:
+            number_of_brains = 1
+
+        brain = {}
+        for i in range(number_of_brains):
+            new_uuid = uuid.uuid4()
+            brain[new_uuid] = np.array([])
 
         return BrainGenotype(brain=brain)
 
