@@ -322,9 +322,13 @@ def learn_population(genotypes, evaluator, dbengine, rng):
 
 
 def learn_genotype(genotype, evaluator, rng):
-    pbounds = {}
+    brain_uuids = genotype.body.check_for_brains()
 
-    for key in genotype.brain.keys():
+    if len(brain_uuids) == 0:
+        return 0, []
+
+    pbounds = {}
+    for key in brain_uuids:
         pbounds['amplitude_' + str(key)] = [0, 1]
         pbounds['phase_' + str(key)] = [0, 1]
         pbounds['touch_weight_' + str(key)] = [0, 1]
@@ -343,14 +347,14 @@ def learn_genotype(genotype, evaluator, rng):
     best_fitness = None
     best_learn_genotype = None
     generations = []
-    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 5 * len(genotype.brain.keys()), rng)
+    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 5 * len(brain_uuids), rng)
     best_point = {}
     for i in range(config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES):
         logging.info(f"Learn generation {i + 1} / {config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES}.")
         if i < config.NUM_RANDOM_SAMPLES:
             j = 0
             next_point = {}
-            for key in genotype.brain.keys():
+            for key in brain_uuids:
                 next_point['amplitude_' + str(key)] = lhs[i][j]
                 next_point['phase_' + str(key)] = lhs[i][j + 1]
                 next_point['touch_weight_' + str(key)] = lhs[i][j + 2]
@@ -374,7 +378,7 @@ def learn_genotype(genotype, evaluator, rng):
                     next_point = possible_point
 
         new_learn_genotype = LearnGenotype(brain={}, body=genotype.body)
-        for brain_uuid in genotype.brain.keys():
+        for brain_uuid in brain_uuids:
             new_learn_genotype.brain[brain_uuid] = np.array(
                 [next_point['amplitude_' + str(brain_uuid)],
                  next_point['phase_' + str(brain_uuid)],
