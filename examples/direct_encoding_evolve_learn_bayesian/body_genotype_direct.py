@@ -270,8 +270,8 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
                 node_to_remove = rng.integers(1, amount_nodes + 1)
                 body.remove_node(node_to_remove)
 
-            used_brains = body.check_for_brains()
             if config.CONTROLLERS == -1:
+                used_brains = body.check_for_brains()
                 brain.remove_unused(used_brains)
         else:
             body.switch_brain(rng, brain)
