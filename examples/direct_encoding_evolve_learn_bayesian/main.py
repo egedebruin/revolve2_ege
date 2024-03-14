@@ -109,6 +109,26 @@ def select_parent(
     )
 
 
+def select_survivors_remove_oldest(original_population: Population, offspring_population: Population) -> Population:
+    original_individuals = []
+    for individual in original_population.individuals:
+        original_individuals.append((individual.genotype, individual.original_generation, individual.fitness))
+    original_individuals = sorted(original_individuals, key=lambda x: (-x[1], -x[2]))
+    original_survivors = original_individuals[:config.POPULATION_SIZE - config.OFFSPRING_SIZE]
+
+    return Population(
+        individuals=[
+                        Individual(
+                            genotype=genotype,
+                            fitness=fitness,
+                            original_generation=original_generation
+                        )
+                        for (genotype, original_generation, fitness) in original_survivors
+                    ] +
+                    offspring_population.individuals
+    )
+
+
 def select_survivors(
     rng: np.random.Generator,
     original_population: Population,
@@ -236,7 +256,7 @@ def run_experiment(dbengine: Engine) -> None:
     # Create a population of individuals, combining genotype with fitness.
     individuals = []
     for genotype, fitness in zip(initial_genotypes, initial_fitnesses):
-        individual = Individual(genotype=genotype, fitness=fitness)
+        individual = Individual(genotype=genotype, fitness=fitness, original_generation=0)
         individuals.append(individual)
     population = Population(
         individuals=individuals
@@ -279,7 +299,9 @@ def run_experiment(dbengine: Engine) -> None:
         offspring_fitnesses = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
 
         # Make an intermediate offspring population.
-        offspring_individuals = [Individual(genotype=genotype, fitness=fitness) for genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
+        offspring_individuals = [
+            Individual(genotype=genotype, fitness=fitness, original_generation=generation.generation_index + 1) for
+            genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
         # Create the next population by selecting survivors.
         population = select_survivors(
             rng,

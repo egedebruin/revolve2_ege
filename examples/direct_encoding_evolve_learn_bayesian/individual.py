@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from sqlalchemy import orm
+
 from base import Base
 from genotype import Genotype
 
@@ -15,3 +17,4 @@ class Individual(
     """An individual in a population."""
 
     __tablename__ = "individual"
+    original_generation: orm.Mapped[int] = orm.mapped_column(nullable=False)

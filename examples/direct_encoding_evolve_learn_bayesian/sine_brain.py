@@ -17,6 +17,7 @@ class SineBrainInstance(BrainInstance):
     touch_weights: list[float]
     neighbour_touch_weights: list[float]
     sensor_phase_offset: list[float]
+    energy: float
 
     def __init__(
             self,
@@ -39,6 +40,7 @@ class SineBrainInstance(BrainInstance):
         self.neighbour_touch_weights = neighbour_touch_weights
         self.sensor_phase_offset = sensor_phase_offset
         self.t = [0.0] * len(active_hinges)
+        self.energy = config.ENERGY
 
     def control(
             self,
@@ -53,6 +55,8 @@ class SineBrainInstance(BrainInstance):
         :param sensor_state: Interface for reading the current sensor state.
         :param control_interface: Interface for controlling the robot.
         """
+        if self.energy < 0:
+            return
         i = 0
         target_list = []
         for active_hinge, amplitude, phase, touch_weight, neighbour_touch_weight, sensor_phase_offset \
@@ -71,6 +75,8 @@ class SineBrainInstance(BrainInstance):
                           dt * touch_sensor * touch_weight * math.sin(self.t[i] + sensor_phase_offset) +
                           dt * neighbour_touch * neighbour_touch_weight * math.sin(self.t[i] + sensor_phase_offset))
             i += 1
+
+        self.energy -= control_interface.get_actuator_force()
 
 
 class SineBrain(Brain):
