@@ -160,6 +160,7 @@ def select_survivors(
             Individual(
                 genotype=original_population.individuals[i].genotype,
                 fitness=original_population.individuals[i].fitness,
+                original_generation=original_population.individuals[i].original_generation
             )
             for i in original_survivors
         ]
@@ -167,6 +168,7 @@ def select_survivors(
             Individual(
                 genotype=offspring_population.individuals[i].genotype,
                 fitness=offspring_population.individuals[i].fitness,
+                original_generation=original_population.individuals[i].original_generation
             )
             for i in offspring_survivors
         ]
