@@ -261,8 +261,15 @@ def run_experiment(dbengine: Engine) -> None:
                     population.individuals[parent2_i].genotype,
                     rng,
                 )
-                offspring_genotypes.append(child_genotype_1.mutate(rng))
-                offspring_genotypes.append(child_genotype_2.mutate(rng))
+                new_genotype_1 = child_genotype_1.mutate(rng)
+                new_genotype_2 = child_genotype_2.mutate(rng)
+                new_genotype_1.parent_1_genotype_id = population.individuals[parent1_i].genotype.id
+                new_genotype_1.parent_2_genotype_id = population.individuals[parent2_i].genotype.id
+                new_genotype_2.parent_1_genotype_id = population.individuals[parent1_i].genotype.id
+                new_genotype_2.parent_2_genotype_id = population.individuals[parent2_i].genotype.id
+
+                offspring_genotypes.append(new_genotype_1)
+                offspring_genotypes.append(new_genotype_2)
         else:
             parents = select_parent(rng, population, config.OFFSPRING_SIZE)
             offspring_genotypes = []

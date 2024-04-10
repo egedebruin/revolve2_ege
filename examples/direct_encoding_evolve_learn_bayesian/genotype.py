@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sqlalchemy.orm as orm
+
 import uuid
 
 import numpy as np
@@ -18,6 +20,9 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
     """SQLAlchemy model for a genotype for a modular robot body and brain."""
 
     __tablename__ = "genotype"
+    parent_1_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
+    parent_2_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
+    mutation_parameter: orm.Mapped[float] = orm.mapped_column(nullable=True, default=None)
 
     @classmethod
     def initialize(
@@ -52,9 +57,11 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
         :returns: A mutated copy of the provided genotype.
         """
         brain = BrainGenotype(brain=self.brain.copy())
-        body = self.mutate_body(rng, brain)
+        body, mutation_parameter = self.mutate_body(rng, brain)
 
-        return Genotype(body=body.body, brain=brain.brain)
+        genotype = Genotype(body=body.body, brain=brain.brain)
+        genotype.mutation_parameter = mutation_parameter
+        return genotype
 
     @staticmethod
     def crossover(

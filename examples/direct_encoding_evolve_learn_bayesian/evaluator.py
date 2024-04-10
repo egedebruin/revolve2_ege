@@ -6,11 +6,12 @@ import numpy as np
 import numpy.typing as npt
 from pyrr import Vector3
 
+import config
+
 from revolve2.ci_group import fitness_functions, terrains
 from revolve2.ci_group.simulation_parameters import make_standard_batch_parameters
 from revolve2.modular_robot import ModularRobot
-from revolve2.modular_robot.body.base import ActiveHinge, Body
-from revolve2.modular_robot.brain.cpg import BrainCpgNetworkStatic, CpgNetworkStructure
+from revolve2.modular_robot.body.base import Body
 from revolve2.modular_robot_simulation import (
     ModularRobotScene,
     Terrain,
@@ -42,8 +43,11 @@ class Evaluator:
             headless=headless, num_simulators=num_simulators
         )
         # self._terrain = terrains.crater((10, 10), 0.2, 0, 0.1)
-        self._terrain = terrains.flat()
-        # self._terrain = terrains.hills(height=0.35)
+
+        if config.ENVIRONMENT == 'flat':
+            self._terrain = terrains.flat()
+        elif config.ENVIRONMENT == 'hills':
+            self._terrain = terrains.hills(height=0.35)
 
     def evaluate(
         self,
