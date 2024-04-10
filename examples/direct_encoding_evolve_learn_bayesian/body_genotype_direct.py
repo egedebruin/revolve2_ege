@@ -76,6 +76,14 @@ class ModuleGenotype:
 
         return nodes
 
+    def get_amount_hinges(self):
+        nodes = 0
+
+        for module in self.children.values():
+            nodes += module.get_amount_hinges()
+
+        return nodes
+
     def is_leaf_node(self):
         return not bool(self.children)
 
@@ -227,6 +235,14 @@ class HingeGenotype(ModuleGenotype):
         self.brain_index = uuid.UUID(serialized['brain_index'])
 
         return self
+
+    def get_amount_hinges(self):
+        nodes = 1
+
+        for module in self.children.values():
+            nodes += module.get_amount_hinges()
+
+        return nodes
 
 
 class BodyGenotypeDirect(orm.MappedAsDataclass):

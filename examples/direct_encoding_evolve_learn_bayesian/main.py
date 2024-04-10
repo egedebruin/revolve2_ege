@@ -191,29 +191,6 @@ def find_best_robot(
     )
 
 
-def initial_genotypes_from_previous_database(rng) -> list[Genotype]:
-    dbengine = open_database_sqlite(
-        config.PREVIOUS_DATABASE_FILE, open_method=OpenMethod.OPEN_IF_EXISTS
-    )
-
-    with Session(dbengine) as ses:
-        row = ses.execute(
-            select(Genotype, Individual.fitness)
-            .join_from(Genotype, Individual, Genotype.id == Individual.genotype_id)
-            .order_by(Individual.fitness.desc())
-            .limit(1)
-        ).one()
-        assert row is not None
-
-        genotype = row[0]
-
-    result = [genotype]
-    for _ in range(config.POPULATION_SIZE - 1):
-        child_genotype = genotype.mutate(rng)
-        result.append(child_genotype)
-    return result
-
-
 def run_experiment(dbengine: Engine) -> None:
     """
     Run an experiment.
@@ -240,15 +217,12 @@ def run_experiment(dbengine: Engine) -> None:
     # Create an initial population.
     logging.info("Generating initial population.")
 
-    if config.INITIAL_POPULATION_FROM_DATABASE:
-        initial_genotypes = initial_genotypes_from_previous_database(rng)
-    else:
-        initial_genotypes = [
-            Genotype.initialize(
-                rng=rng,
-            )
-            for _ in range(config.POPULATION_SIZE)
-        ]
+    initial_genotypes = [
+        Genotype.initialize(
+            rng=rng,
+        )
+        for _ in range(config.POPULATION_SIZE)
+    ]
 
     # Evaluate the initial population.
     logging.info("Evaluating initial population.")
