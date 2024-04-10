@@ -10,7 +10,7 @@ from revolve2.experimentation.database import HasId
 
 
 class Generation(Base, HasId):
-    """A single finished iteration of CMA-ES."""
+    """A single finished iteration of evolution."""
 
     __tablename__ = "generation"
 

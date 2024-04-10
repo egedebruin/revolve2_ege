@@ -21,7 +21,6 @@ from learn_population import LearnPopulation
 from learn_generation import LearnGeneration
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
@@ -227,7 +226,7 @@ def run_experiment(dbengine: Engine) -> None:
     # Evaluate the initial population.
     logging.info("Evaluating initial population.")
 
-    initial_fitnesses = learn_population(genotypes=initial_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
+    initial_fitnesses, initial_genotypes = learn_population(genotypes=initial_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
 
     # Create a population of individuals, combining genotype with fitness.
     individuals = []
@@ -272,7 +271,7 @@ def run_experiment(dbengine: Engine) -> None:
                 offspring_genotypes.append(child_genotype)
 
         # Evaluate the offspring.
-        offspring_fitnesses = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
+        offspring_fitnesses, offspring_genotypes = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
 
         # Make an intermediate offspring population.
         offspring_individuals = [
@@ -306,24 +305,37 @@ def learn_population(genotypes, evaluator, dbengine, rng):
             executor.submit(learn_genotype, genotype, evaluator, rng)
             for genotype in genotypes
         ]
-        result_fitnesses = []
-        for future in futures:
+    result_fitnesses = []
+    genotypes = []
+    for future in futures:
 
-            fitness, generations = future.result()
-            result_fitnesses.append(fitness)
+        fitness, learn_generations = future.result()
+        result_fitnesses.append(fitness)
+        genotypes.append(learn_generations[0].genotype)
 
-            for generation in generations:
-                with Session(dbengine, expire_on_commit=False) as session:
-                    session.add(generation)
-                    session.commit()
-    return result_fitnesses
+        for learn_generation in learn_generations:
+            with Session(dbengine, expire_on_commit=False) as session:
+                session.add(learn_generation)
+                session.commit()
+    return result_fitnesses, genotypes
 
 
 def learn_genotype(genotype, evaluator, rng):
     brain_uuids = genotype.body.check_for_brains()
 
     if len(brain_uuids) == 0:
-        return 0, []
+        empty_learn_genotype = LearnGenotype(brain={}, body=genotype.body)
+        population = LearnPopulation(
+            individuals=[
+                LearnIndividual(genotype=empty_learn_genotype, fitness=0)
+            ]
+        )
+
+        return 0, [LearnGeneration(
+            genotype=genotype,
+            generation_index=0,
+            learn_population=population,
+        )]
 
     pbounds = {}
     for key in brain_uuids:
@@ -344,7 +356,7 @@ def learn_genotype(genotype, evaluator, rng):
 
     best_fitness = None
     best_learn_genotype = None
-    generations = []
+    learn_generations = []
     lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 5 * len(brain_uuids), rng)
     best_point = {}
     for i in range(config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES):
@@ -403,14 +415,14 @@ def learn_genotype(genotype, evaluator, rng):
             ]
         )
         # Make it all into a generation and save it to the database.
-        generation = LearnGeneration(
+        learn_generation = LearnGeneration(
             genotype=genotype,
             generation_index=i,
             learn_population=population,
         )
-        generations.append(generation)
+        learn_generations.append(learn_generation)
     genotype.brain = best_learn_genotype.brain
-    return best_fitness, generations
+    return best_fitness, learn_generations
 
 
 def main() -> None:
