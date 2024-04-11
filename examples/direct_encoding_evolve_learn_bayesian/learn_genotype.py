@@ -9,11 +9,14 @@ from body_genotype_direct import BodyGenotypeDirect
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot
 
+import sqlalchemy.orm as orm
+
 
 class LearnGenotype(Base, HasId, BrainGenotype, BodyGenotypeDirect):
     """A genotype that is an array of parameters."""
 
     __tablename__ = "learn_genotype"
+    execution_time: orm.Mapped[float] = orm.mapped_column(default=0.0)
 
     def develop(self) -> ModularRobot:
         """

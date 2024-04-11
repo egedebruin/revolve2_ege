@@ -1,6 +1,7 @@
 """Main script for the example."""
 import concurrent.futures
 import logging
+import time
 
 from bayes_opt import BayesianOptimization, UtilityFunction
 from sklearn.gaussian_process.kernels import Matern
@@ -329,6 +330,8 @@ def learn_population(genotypes, evaluator, dbengine, rng):
 
 def learn_genotype(genotype, evaluator, rng):
     brain_uuids = genotype.body.check_for_brains()
+    all_brain_uuids = list(genotype.brain.keys())
+    difference = list(set(all_brain_uuids) - set(brain_uuids))
 
     if len(brain_uuids) == 0:
         empty_learn_genotype = LearnGenotype(brain={}, body=genotype.body)
@@ -406,7 +409,10 @@ def learn_genotype(genotype, evaluator, rng):
         robot = new_learn_genotype.develop()
 
         # Evaluate them.
+        start_time = time.time()
         fitness = evaluator.evaluate(robot)
+        end_time = time.time()
+        new_learn_genotype.execution_time = end_time - start_time
 
         if best_fitness is None or fitness >= best_fitness:
             best_fitness = fitness
@@ -428,7 +434,14 @@ def learn_genotype(genotype, evaluator, rng):
             learn_population=population,
         )
         learn_generations.append(learn_generation)
-    genotype.brain = best_learn_genotype.brain
+
+    for key, value in genotype.brain.items():
+        if key in difference:
+            genotype.brain[key] = value
+    for key, value in best_learn_genotype.brain.items():
+        genotype.brain[key] = value
+    genotype.brain = {k: v for k, v in sorted(genotype.brain.items())}
+
     return best_fitness, learn_generations
 
 

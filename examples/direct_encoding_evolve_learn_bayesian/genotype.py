@@ -77,15 +77,16 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
         :param rng: Random number generator.
         :returns: A newly created genotype.
         """
-        child1, child2 = BodyGenotypeDirect.crossover_body(parent1, parent2, rng)
+        child1_body, child2_body = BodyGenotypeDirect.crossover_body(parent1, parent2, rng)
 
         if config.CONTROLLERS != -1:
-            return Genotype(body=child1.body, brain=parent1.brain), Genotype(body=child2.body, brain=parent2.brain)
+            child1_brain, child2_brain = BrainGenotype.crossover(rng, parent1, parent2)
+            return Genotype(body=child1_body.body, brain=child1_brain.brain), Genotype(body=child2_body.body, brain=child2_brain.brain)
 
         all_brains = {**parent1.brain, **parent2.brain}
 
-        child_1_brain = {key: all_brains[key] for key in child1.get_brain_uuids() if key in all_brains}
-        child_2_brain = {key: all_brains[key] for key in child2.get_brain_uuids() if key in all_brains}
+        child_1_brain = {key: all_brains[key] for key in child1_body.get_brain_uuids() if key in all_brains}
+        child_2_brain = {key: all_brains[key] for key in child2_body.get_brain_uuids() if key in all_brains}
 
         if len(child_1_brain.keys()) == 0:
             new_uuid = uuid.uuid4()
@@ -95,7 +96,7 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
             new_uuid = uuid.uuid4()
             child_2_brain = {new_uuid: np.array([])}
 
-        return Genotype(body=child1.body, brain=child_1_brain), Genotype(body=child2.body, brain=child_2_brain)
+        return Genotype(body=child1_body.body, brain=child_1_brain), Genotype(body=child1_body.body, brain=child_2_brain)
 
     def develop(self) -> ModularRobot:
         """

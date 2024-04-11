@@ -162,7 +162,7 @@ class ModuleGenotype:
 
 
 class CoreGenotype(ModuleGenotype):
-    possible_children = ['left', 'right', 'front', 'back', 'down']
+    possible_children = ['left', 'right', 'front', 'back', 'down', 'up']
     type = 'core'
 
     def develop(self):
@@ -291,6 +291,10 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
                 brain.remove_unused(used_brains)
         elif mutation_chooser < 0.60:
             body.switch_brain(rng, brain)
+
+            if config.CONTROLLERS == -1:
+                used_brains = body.check_for_brains()
+                brain.remove_unused(used_brains)
         return BodyGenotypeDirect(body=body), mutation_chooser
 
     def get_brain_uuids(self):

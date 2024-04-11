@@ -59,6 +59,30 @@ class BrainGenotype(orm.MappedAsDataclass):
             new_uuid = uuid.uuid4()
             self.brain = {new_uuid: np.array([])}
 
+    @classmethod
+    def crossover(cls, rng, parent1, parent2):
+        child1_brain, child2_brain = BrainGenotype.initialize_brain(), BrainGenotype.initialize_brain()
+
+        for i in range(config.CONTROLLERS):
+            chooser_list = []
+
+            if len(parent1.brain[uuid.UUID(int=i)]) > 0:
+                chooser_list.append(parent1.brain[uuid.UUID(int=i)])
+            if len(parent2.brain[uuid.UUID(int=i)]) > 0:
+                chooser_list.append(parent2.brain[uuid.UUID(int=i)])
+
+            if len(chooser_list) == 1:
+                child1_brain.brain[uuid.UUID(int=i)] = chooser_list[0]
+                child2_brain.brain[uuid.UUID(int=i)] = chooser_list[0]
+            if len(chooser_list) == 2:
+                if rng.random() > 0.5:
+                    child1_brain.brain[uuid.UUID(int=i)] = chooser_list[0]
+                    child2_brain.brain[uuid.UUID(int=i)] = chooser_list[1]
+                else:
+                    child1_brain.brain[uuid.UUID(int=i)] = chooser_list[1]
+                    child2_brain.brain[uuid.UUID(int=i)] = chooser_list[0]
+        return child1_brain, child2_brain
+
     def develop_brain(self, body: BodyV1):
         active_hinges = body.find_modules_of_type(ActiveHinge)
 
