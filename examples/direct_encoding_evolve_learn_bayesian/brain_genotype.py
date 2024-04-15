@@ -30,7 +30,7 @@ class BrainGenotype(orm.MappedAsDataclass):
         self.brain = brain
 
     @classmethod
-    def initialize_brain(cls) -> 'BrainGenotype':
+    def initialize_brain(cls, rng) -> 'BrainGenotype':
         number_of_brains = config.CONTROLLERS
         if config.CONTROLLERS == -1:
             number_of_brains = 1
@@ -40,7 +40,7 @@ class BrainGenotype(orm.MappedAsDataclass):
             new_uuid = uuid.uuid4()
             if config.CONTROLLERS != -1:
                 new_uuid = uuid.UUID(int=i)
-            brain[new_uuid] = np.array([])
+            brain[new_uuid] = np.array(rng.random(5))
 
         return BrainGenotype(brain=brain)
 
@@ -59,28 +59,27 @@ class BrainGenotype(orm.MappedAsDataclass):
             new_uuid = uuid.uuid4()
             self.brain = {new_uuid: np.array([])}
 
+    def mutate_brain(self, rng: np.random.Generator):
+        brain = BrainGenotype(brain=self.brain.copy())
+
+        for key, value in brain.brain.items():
+            noise = rng.normal(loc=0, scale=config.MUTATION_STD, size=len(value))
+            noisy_values = [v + n for v, n in zip(value, noise)]
+            brain.brain[key] = np.clip(noisy_values, 0, 1)
+
+        return brain
+
     @classmethod
-    def crossover(cls, rng, parent1, parent2):
-        child1_brain, child2_brain = BrainGenotype.initialize_brain(), BrainGenotype.initialize_brain()
+    def crossover_brain(cls, parent1, parent2, rng):
+        child1_brain, child2_brain = BrainGenotype.initialize_brain(rng), BrainGenotype.initialize_brain(rng)
 
         for i in range(config.CONTROLLERS):
-            chooser_list = []
-
-            if len(parent1.brain[uuid.UUID(int=i)]) > 0:
-                chooser_list.append(parent1.brain[uuid.UUID(int=i)])
-            if len(parent2.brain[uuid.UUID(int=i)]) > 0:
-                chooser_list.append(parent2.brain[uuid.UUID(int=i)])
-
-            if len(chooser_list) == 1:
-                child1_brain.brain[uuid.UUID(int=i)] = chooser_list[0]
-                child2_brain.brain[uuid.UUID(int=i)] = chooser_list[0]
-            if len(chooser_list) == 2:
-                if rng.random() > 0.5:
-                    child1_brain.brain[uuid.UUID(int=i)] = chooser_list[0]
-                    child2_brain.brain[uuid.UUID(int=i)] = chooser_list[1]
-                else:
-                    child1_brain.brain[uuid.UUID(int=i)] = chooser_list[1]
-                    child2_brain.brain[uuid.UUID(int=i)] = chooser_list[0]
+            if rng.random() > 0.5:
+                child1_brain.brain[uuid.UUID(int=i)] = parent1.brain[uuid.UUID(int=i)]
+                child2_brain.brain[uuid.UUID(int=i)] = parent2.brain[uuid.UUID(int=i)]
+            else:
+                child1_brain.brain[uuid.UUID(int=i)] = parent2.brain[uuid.UUID(int=i)]
+                child2_brain.brain[uuid.UUID(int=i)] = parent1.brain[uuid.UUID(int=i)]
         return child1_brain, child2_brain
 
     def develop_brain(self, body: BodyV1):

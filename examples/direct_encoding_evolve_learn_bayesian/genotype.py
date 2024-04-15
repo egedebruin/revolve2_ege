@@ -37,7 +37,7 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
         :param rng: Random number generator.
         :returns: The created genotype.
         """
-        brain = cls.initialize_brain()
+        brain = cls.initialize_brain(rng=rng)
         body = cls.initialize_body(rng=rng, brain=brain)
 
         return Genotype(body=body.body, brain=brain.brain)
@@ -56,7 +56,7 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
         :param rng: Random number generator.
         :returns: A mutated copy of the provided genotype.
         """
-        brain = BrainGenotype(brain=self.brain.copy())
+        brain = self.mutate_brain(rng)
         body, mutation_parameter = self.mutate_body(rng, brain)
 
         genotype = Genotype(body=body.body, brain=brain.brain)
@@ -80,7 +80,7 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
         child1_body, child2_body = BodyGenotypeDirect.crossover_body(parent1, parent2, rng)
 
         if config.CONTROLLERS != -1:
-            child1_brain, child2_brain = BrainGenotype.crossover(rng, parent1, parent2)
+            child1_brain, child2_brain = BrainGenotype.crossover_brain(parent1, parent2, rng)
             return Genotype(body=child1_body.body, brain=child1_brain.brain), Genotype(body=child2_body.body, brain=child2_brain.brain)
 
         all_brains = {**parent1.brain, **parent2.brain}

@@ -330,17 +330,14 @@ def learn_population(genotypes, evaluator, dbengine, rng):
 
 def learn_genotype(genotype, evaluator, rng):
     brain_uuids = genotype.body.check_for_brains()
-    all_brain_uuids = list(genotype.brain.keys())
-    difference = list(set(all_brain_uuids) - set(brain_uuids))
 
     if len(brain_uuids) == 0:
-        empty_learn_genotype = LearnGenotype(brain={}, body=genotype.body)
+        empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
         population = LearnPopulation(
             individuals=[
                 LearnIndividual(genotype=empty_learn_genotype, fitness=0)
             ]
         )
-
         return 0, [LearnGeneration(
             genotype=genotype,
             generation_index=0,
@@ -372,16 +369,25 @@ def learn_genotype(genotype, evaluator, rng):
     for i in range(config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES):
         logging.info(f"Learn generation {i + 1} / {config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES}.")
         if i < config.NUM_RANDOM_SAMPLES:
-            j = 0
-            next_point = {}
-            for key in brain_uuids:
-                next_point['amplitude_' + str(key)] = lhs[i][j]
-                next_point['phase_' + str(key)] = lhs[i][j + 1]
-                next_point['touch_weight_' + str(key)] = lhs[i][j + 2]
-                next_point['neighbour_touch_weight_' + str(key)] = lhs[i][j + 3]
-                next_point['sensor_phase_offset_' + str(key)] = lhs[i][j + 4]
-                j += 5
-            next_point = dict(sorted(next_point.items()))
+            if config.EVOLUTIONARY_SEARCH:
+                next_point = {}
+                for key in brain_uuids:
+                    next_point['amplitude_' + str(key)] = genotype.brain[key][0]
+                    next_point['phase_' + str(key)] = genotype.brain[key][1]
+                    next_point['touch_weight_' + str(key)] = genotype.brain[key][2]
+                    next_point['neighbour_touch_weight_' + str(key)] = genotype.brain[key][3]
+                    next_point['sensor_phase_offset_' + str(key)] = genotype.brain[key][4]
+            else:
+                j = 0
+                next_point = {}
+                for key in brain_uuids:
+                    next_point['amplitude_' + str(key)] = lhs[i][j]
+                    next_point['phase_' + str(key)] = lhs[i][j + 1]
+                    next_point['touch_weight_' + str(key)] = lhs[i][j + 2]
+                    next_point['neighbour_touch_weight_' + str(key)] = lhs[i][j + 3]
+                    next_point['sensor_phase_offset_' + str(key)] = lhs[i][j + 4]
+                    j += 5
+                next_point = dict(sorted(next_point.items()))
         else:
             next_point = optimizer.suggest(utility)
             next_point = dict(sorted(next_point.items()))
@@ -435,12 +441,10 @@ def learn_genotype(genotype, evaluator, rng):
         )
         learn_generations.append(learn_generation)
 
-    for key, value in genotype.brain.items():
-        if key in difference:
+    if config.OVERWRITE_BRAIN_GENOTYPE:
+        for key, value in best_learn_genotype.brain.items():
             genotype.brain[key] = value
-    for key, value in best_learn_genotype.brain.items():
-        genotype.brain[key] = value
-    genotype.brain = {k: v for k, v in sorted(genotype.brain.items())}
+        genotype.brain = {k: v for k, v in sorted(genotype.brain.items())}
 
     return best_fitness, learn_generations
 
