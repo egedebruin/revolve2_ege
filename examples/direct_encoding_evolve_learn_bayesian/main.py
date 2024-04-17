@@ -2,6 +2,7 @@
 import concurrent.futures
 import logging
 import time
+from argparse import ArgumentParser
 
 from bayes_opt import BayesianOptimization, UtilityFunction
 from sklearn.gaussian_process.kernels import Matern
@@ -451,6 +452,13 @@ def learn_genotype(genotype, evaluator, rng):
 
 def main() -> None:
     """Run the program."""
+    # Read args
+    parser = ArgumentParser()
+    parser.add_argument("--database", required=False)
+    args = parser.parse_args()
+    if args.database:
+        config.DATABASE = args.database + ".sqlite"
+
     # Set up logging.
     setup_logging(file_name="log.txt")
 
