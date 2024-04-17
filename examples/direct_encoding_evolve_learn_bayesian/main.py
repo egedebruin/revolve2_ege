@@ -450,14 +450,33 @@ def learn_genotype(genotype, evaluator, rng):
     return best_fitness, learn_generations
 
 
-def main() -> None:
-    """Run the program."""
+def read_args():
     # Read args
     parser = ArgumentParser()
-    parser.add_argument("--database", required=False)
+    parser.add_argument("--learn", required=True)
+    parser.add_argument("--controllers", required=True)
+    parser.add_argument("--environment", required=True)
+    parser.add_argument("--repetition", required=True)
+    parser.add_argument("--evosearch", required=True)
     args = parser.parse_args()
-    if args.database:
-        config.DATABASE = args.database + ".sqlite"
+    if args.learn == '1':
+        config.NUM_RANDOM_SAMPLES = 1
+        config.LEARN_NUM_GENERATIONS = 0
+    else:
+        config.NUM_RANDOM_SAMPLES = int(int(args.learn) / 10)
+        config.LEARN_NUM_GENERATIONS = int(int(args.learn) - int(args.learn) / 10)
+    config.CONTROLLERS = int(args.controllers)
+    config.ENVIRONMENT = args.environment
+    config.EVOLUTIONARY_SEARCH = args.evosearch == '1'
+    config.DATABASE_FILE = ("learn-" + str(args.learn) + "_evosearch-" + args.evosearch + "_controllers-" +
+                            str(args.controllers) + "_environment-" + args.environment + "_" + str(
+                args.repetition) + ".sqlite")
+
+
+def main() -> None:
+    """Run the program."""
+    if config.READ_ARGS:
+        read_args()
 
     # Set up logging.
     setup_logging(file_name="log.txt")
