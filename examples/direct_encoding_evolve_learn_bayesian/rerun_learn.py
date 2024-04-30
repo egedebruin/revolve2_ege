@@ -2,8 +2,6 @@
 
 import config
 from evaluator import Evaluator
-from genotype import Genotype
-from individual import Individual
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
