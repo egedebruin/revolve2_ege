@@ -11,7 +11,7 @@ from sqlalchemy.engine import Connection
 from brain_genotype import BrainGenotype
 import config
 from revolve2.modular_robot.body import RightAngles
-from revolve2.modular_robot.body.v1 import BodyV1, ActiveHingeV1, BrickV1, CoreV1
+from revolve2.modular_robot.body.v1 import BodyV1, ActiveHingeV1, BrickV1
 
 
 class ModuleGenotype:
@@ -19,14 +19,26 @@ class ModuleGenotype:
     children: dict
     possible_children: list
     type: str
+    body_module = None
 
     def __init__(self, rotation):
         self.rotation = rotation
         self.children = {}
 
-    @abstractmethod
-    def develop(self):
-        pass
+    def develop(self, body, grid=None):
+        if grid is None:
+            grid = []
+        for direction, module in self.children.items():
+            new_module = module.body_module
+            setattr(self.body_module, direction, new_module)
+            module.develop(body, grid)
+
+            grid_position = body.grid_position(new_module)
+            if grid_position not in grid:
+                grid.append(grid_position)
+            else:
+                setattr(self.body_module, direction, None)
+                continue
 
     def add_random_module(self, rng: np.random.Generator, brain: BrainGenotype):
         direction_chooser = rng.choice(self.possible_children)
@@ -165,14 +177,9 @@ class CoreGenotype(ModuleGenotype):
     possible_children = ['left', 'right', 'front', 'back', 'down', 'up']
     type = 'core'
 
-    def develop(self):
-        body = BodyV1()
-        current = body.core_v1
-
-        for direction, module in self.children.items():
-            setattr(current, direction, module.develop())
-
-        return body
+    def develop(self, body, grid=None):
+        self.body_module = body.core_v1
+        super().develop(body)
 
     def get_amount_nodes(self):
         nodes = 0
@@ -187,13 +194,9 @@ class BrickGenotype(ModuleGenotype):
     possible_children = ['left', 'right', 'front', 'up', 'down']
     type = 'brick'
 
-    def develop(self):
-        current = BrickV1(self.rotation)
-
-        for direction, module in self.children.items():
-            setattr(current, direction, module.develop())
-
-        return current
+    def __init__(self, rotation):
+        super().__init__(rotation)
+        self.body_module = BrickV1(rotation)
 
 
 class HingeGenotype(ModuleGenotype):
@@ -201,15 +204,13 @@ class HingeGenotype(ModuleGenotype):
     brain_index = -1
     type = 'hinge'
 
-    def develop(self):
-        current = ActiveHingeV1(self.rotation)
+    def __init__(self, rotation):
+        super().__init__(rotation)
+        self.body_module = ActiveHingeV1(rotation)
 
-        for direction, module in self.children.items():
-            setattr(current, direction, module.develop())
-
-        current.map_uuid = self.brain_index
-
-        return current
+    def develop(self, body, grid=None):
+        super().develop(body)
+        self.body_module.map_uuid = self.brain_index
 
     def check_for_brains(self):
         uuids = super().check_for_brains()
@@ -320,8 +321,8 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
         return child1, child2
 
     def develop_body(self):
-        body = self.body.develop()
-
+        body = BodyV1()
+        self.body.develop(body)
         return body
 
 

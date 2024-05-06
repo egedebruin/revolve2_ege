@@ -1,5 +1,5 @@
 """Configuration parameters for this example."""
-DATABASE_FILE = "learn-20_controllers-1_environment-flat_1.sqlite"
+DATABASE_FILE = "results/learn-30_evosearch-0_controllers-4_environment-hills_3.sqlite"
 ENVIRONMENT = 'flat'
 NUM_REPETITIONS = 1
 NUM_SIMULATORS = 1
@@ -16,8 +16,8 @@ MAX_ADD_MODULES = 1
 MAX_DELETE_MODULES = 1
 CONTROLLERS = 1
 
-LEARN_NUM_GENERATIONS = 18
-NUM_RANDOM_SAMPLES = 2
+LEARN_NUM_GENERATIONS = 27
+NUM_RANDOM_SAMPLES = 3
 KAPPA = 3  # Variation for Acquisition function (Low is exploitation, high is exploration)
 ALPHA = 0  # Sampling noise
 NU = 5/2  # Smoothness parameter for Matern kernel (Low is rigid, high is smooth)
@@ -33,4 +33,4 @@ CROSSOVER = True
 INITIAL_POPULATION_FROM_DATABASE = False
 OVERWRITE_BRAIN_GENOTYPE = False
 EVOLUTIONARY_SEARCH = False
-READ_ARGS = True
+READ_ARGS = False

@@ -114,6 +114,9 @@ class Module:
         :param child_index: The slot to attach it to.
         :raises KeyError: If attachment point is already populated.
         """
+        if module is None:
+            self._children.pop(child_index)
+            return
         assert (
             module._parent is None
         ), "Child module already connected to a different slot."
