@@ -31,6 +31,28 @@ def flat(size: Vector2 = Vector2([20.0, 20.0])) -> Terrain:
     )
 
 
+def flat_thin(length: float = 30.0) -> Terrain:
+    size = Vector2([3.0, length])
+    heights = []
+    for i in range(10):
+        row_height = []
+        for j in range(10):
+            row_height.append(0)
+        heights.append(row_height)
+
+    return Terrain(
+        static_geometry=[
+            GeometryHeightmap(
+                pose=Pose(position=Vector3([0, size[1] - 1, 0])),
+                mass=0.0,
+                size=Vector3([size[0], size[1], 0]),
+                base_thickness=0.1,
+                heights=heights,
+            )
+        ]
+    )
+
+
 def gradient(size: Vector2 = Vector2([20.0, 20.0]), angle=0.0) -> Terrain:
     """
     Create a flat plane terrain.
@@ -50,7 +72,7 @@ def gradient(size: Vector2 = Vector2([20.0, 20.0]), angle=0.0) -> Terrain:
     )
 
 
-def hills(length: float = 20.0, height=0.0, num_edges=100) -> Terrain:
+def hills(length: float = 30.0, height=0.0, num_edges=100) -> Terrain:
     size = Vector2([3.0, length])
     heights = []
     for i in range(num_edges):
@@ -65,7 +87,7 @@ def hills(length: float = 20.0, height=0.0, num_edges=100) -> Terrain:
     return Terrain(
         static_geometry=[
             GeometryHeightmap(
-                pose=Pose(position=Vector3([0, size[1] - 0.5, 0])),
+                pose=Pose(position=Vector3([0, size[1] - 1, 0])),
                 mass=0.0,
                 size=Vector3([size[0], size[1], height]),
                 base_thickness=0.1,
@@ -74,6 +96,103 @@ def hills(length: float = 20.0, height=0.0, num_edges=100) -> Terrain:
         ]
     )
 
+
+def steps(length: float = 30.0, height=0.0, num_edges=1000) -> Terrain:
+    size = Vector2([3.0, length])
+
+    heights = []
+    for _ in range(num_edges):
+        row_height = []
+        current_height = 0
+        for j in range(num_edges):
+            if j < num_edges * 0.03:
+                row_height.append(current_height)
+                continue
+            if j % (num_edges / 100) == 0.0:
+                current_height += height
+            row_height.append(current_height)
+        row_height = row_height[::-1]
+        heights.append(row_height)
+
+    return Terrain(
+        static_geometry=[
+            GeometryHeightmap(
+                pose=Pose(position=Vector3([0, size[1] - 1, 0])),
+                mass=0.0,
+                size=Vector3([size[0], size[1], height]),
+                base_thickness=0.1,
+                heights=heights,
+            )
+        ]
+    )
+
+
+def thin_crater(
+    size: tuple[float, float],
+    ruggedness: float,
+    curviness: float,
+    granularity_multiplier: float = 1.0,
+    wanted_size: float = 3.0
+) -> Terrain:
+    r"""
+    Create a crater-like terrain with rugged floor using a heightmap.
+
+    It will look like::
+
+        |            |
+         \_        .'
+           '.,^_..'
+
+    A combination of the rugged and bowl heightmaps.
+
+    :param size: Size of the crater.
+    :param ruggedness: How coarse the ground is.
+    :param curviness: Height of the edges of the crater.
+    :param granularity_multiplier: Multiplier for how many edges are used in the heightmap.
+    :param wanted_size: Wanted width of the crater.
+    :returns: The created terrain.
+    """
+    NUM_EDGES = 100  # arbitrary constant to get a nice number of edges
+
+    num_edges = (
+        int(NUM_EDGES * size[0] * granularity_multiplier),
+        int(NUM_EDGES * size[1] * granularity_multiplier),
+    )
+
+    300/2 - (3.0/2)/30.0 * 300
+
+    rugged = rugged_heightmap(
+        size=size,
+        num_edges=num_edges,
+        density=1.5,
+    )
+    bowl = bowl_heightmap(num_edges=num_edges)
+
+    max_height = ruggedness + curviness
+    if max_height == 0.0:
+        heightmap = np.zeros(num_edges)
+        max_height = 1.0
+    else:
+        heightmap = (ruggedness * rugged + curviness * bowl) / (ruggedness + curviness)
+
+    for i in range(num_edges[0]):
+        for j in range(num_edges[1]):
+            if j > num_edges[1] * 0.96:
+                heightmap[i, j] = 0
+            if i == (num_edges[0]/2 - (wanted_size/2)/size[0] * num_edges[0]) or i == (num_edges[0]/2 +(wanted_size/2)/size[0] * num_edges[0]):
+                heightmap[i, j] = 2
+
+    return Terrain(
+        static_geometry=[
+            GeometryHeightmap(
+                pose=Pose(position=Vector3([0, size[1] - 1, 0])),
+                mass=0.0,
+                size=Vector3([size[0], size[1], max_height]),
+                base_thickness=0.1,
+                heights=heightmap,
+            )
+        ]
+    )
 
 def crater(
     size: tuple[float, float],
