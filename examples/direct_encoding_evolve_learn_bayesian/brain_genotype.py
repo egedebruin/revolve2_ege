@@ -92,7 +92,8 @@ class BrainGenotype(orm.MappedAsDataclass):
         for active_hinge in active_hinges:
             amplitudes.append(self.brain[active_hinge.map_uuid][0])
             phases.append(self.brain[active_hinge.map_uuid][1] * 2 * math.pi)
-            touch_weights.append(self.brain[active_hinge.map_uuid][2] * config.FREQUENCY - config.FREQUENCY)
+            touch_weights.append((self.brain[active_hinge.map_uuid][2] * config.MAX_ATTRACTION_COEFFICIENT -
+                                  config.MAX_ATTRACTION_COEFFICIENT))
             sensor_phase_offset.append(self.brain[active_hinge.map_uuid][3] * 2 * math.pi)
 
         brain = SineBrain(

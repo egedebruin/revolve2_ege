@@ -29,7 +29,7 @@ class ModuleGenotype:
         if grid is None:
             grid = []
         for direction, module in self.children.items():
-            new_module = module.body_module
+            new_module = module.get_body_module()
             setattr(self.body_module, direction, new_module)
             module.develop(body, grid)
 
@@ -39,6 +39,9 @@ class ModuleGenotype:
             else:
                 setattr(self.body_module, direction, None)
                 continue
+
+    def get_body_module(self):
+        pass
 
     def add_random_module(self, rng: np.random.Generator, brain: BrainGenotype):
         direction_chooser = rng.choice(self.possible_children)
@@ -176,6 +179,7 @@ class ModuleGenotype:
 class CoreGenotype(ModuleGenotype):
     possible_children = ['left', 'right', 'front', 'back', 'down', 'up']
     type = 'core'
+    rotation = 0.0
 
     def develop(self, body, grid=None):
         self.body_module = body.core_v1
@@ -194,9 +198,9 @@ class BrickGenotype(ModuleGenotype):
     possible_children = ['left', 'right', 'front', 'up', 'down']
     type = 'brick'
 
-    def __init__(self, rotation):
-        super().__init__(rotation)
-        self.body_module = BrickV1(rotation)
+    def get_body_module(self):
+        self.body_module = BrickV1(self.rotation)
+        return self.body_module
 
 
 class HingeGenotype(ModuleGenotype):
@@ -204,13 +208,13 @@ class HingeGenotype(ModuleGenotype):
     brain_index = -1
     type = 'hinge'
 
-    def __init__(self, rotation):
-        super().__init__(rotation)
-        self.body_module = ActiveHingeV1(rotation)
-
     def develop(self, body, grid=None):
         super().develop(body)
         self.body_module.map_uuid = self.brain_index
+
+    def get_body_module(self):
+        self.body_module = ActiveHingeV1(self.rotation)
+        return self.body_module
 
     def check_for_brains(self):
         uuids = super().check_for_brains()

@@ -60,9 +60,9 @@ class SineBrainInstance(BrainInstance):
                 in zip(self.active_hinges, self.amplitudes, self.phases, self.touch_weights, self.sensor_phase_offset):
             touch_sensor = int(control_interface.get_touch_sensor(active_hinge) > 0)
             for neighbour in active_hinge.neighbours(2):
-                if isinstance(neighbour, ActiveHinge) and control_interface.get_touch_sensor(neighbour) > 0:
-                    touch_sensor = 1
-                    break
+                if isinstance(neighbour, ActiveHinge):
+                    neighbour_touch_sensor = control_interface.get_touch_sensor(neighbour)
+                    touch_sensor = max(touch_sensor, neighbour_touch_sensor)
             target = amplitude * math.sin(self.t[i] + phase * config.FREQUENCY)
             target_list.append(target)
             control_interface.set_active_hinge_target(active_hinge, target)
