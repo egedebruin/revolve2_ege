@@ -97,7 +97,7 @@ def hills(length: float = 30.0, height=0.0, num_edges=100) -> Terrain:
     )
 
 
-def steps(length: float = 30.0, height=0.0, num_edges=1000) -> Terrain:
+def steps(length: float = 30.0, height=0.0, num_edges=100) -> Terrain:
     size = Vector2([3.0, length])
 
     heights = []
@@ -108,7 +108,7 @@ def steps(length: float = 30.0, height=0.0, num_edges=1000) -> Terrain:
             if j < num_edges * 0.03:
                 row_height.append(current_height)
                 continue
-            if j % (num_edges / 100) == 0.0:
+            if j % (num_edges / 40) == 0.0:
                 current_height += height
             row_height.append(current_height)
         row_height = row_height[::-1]
@@ -158,8 +158,6 @@ def thin_crater(
         int(NUM_EDGES * size[0] * granularity_multiplier),
         int(NUM_EDGES * size[1] * granularity_multiplier),
     )
-
-    300/2 - (3.0/2)/30.0 * 300
 
     rugged = rugged_heightmap(
         size=size,
