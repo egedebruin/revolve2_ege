@@ -287,8 +287,7 @@ def run_experiment(dbengine: Engine) -> None:
             Individual(genotype=genotype, fitness=fitness, original_generation=generation.generation_index + 1) for
             genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
         # Create the next population by selecting survivors.
-        population = select_survivors(
-            rng,
+        population = select_survivors_remove_oldest(
             population,
             Population(
                 individuals=offspring_individuals
@@ -461,7 +460,7 @@ def read_args():
     else:
         config.NUM_RANDOM_SAMPLES = int(int(args.learn) / 10)
         config.LEARN_NUM_GENERATIONS = int(int(args.learn) - int(args.learn) / 10)
-    config.NUM_GENERATIONS = (150000 / (int(args.learn) * 10)) - 5
+    config.NUM_GENERATIONS = (150000 / (int(args.learn) * 10)) - 10
     config.CONTROLLERS = int(args.controllers)
     config.ENVIRONMENT = args.environment
     config.EVOLUTIONARY_SEARCH = args.evosearch == '1'

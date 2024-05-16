@@ -169,7 +169,7 @@ class ModuleGenotype:
 
             new_brain_chooser = rng.random()
             if config.CONTROLLERS == -1 and new_brain_chooser < config.NEW_HINGE_NEW_BRAIN:
-                module.brain_index = brain.add_new()
+                module.brain_index = brain.add_new(rng)
             else:
                 module.brain_index = rng.choice(list(brain.brain.keys()))
 
@@ -283,7 +283,7 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
                 amount_possible_connections = body.get_amount_possible_connections()
                 connection_to_add = rng.integers(1, amount_possible_connections + 1)
                 body.add_random_module_to_connection(connection_to_add, rng, brain)
-        elif mutation_chooser < 0.30:
+        elif mutation_chooser < 0.25:
             for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
                 amount_nodes = body.get_amount_nodes()
                 if amount_nodes == 0:
@@ -294,7 +294,7 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
             if config.CONTROLLERS == -1:
                 used_brains = body.check_for_brains()
                 brain.remove_unused(used_brains)
-        elif mutation_chooser < 0.45:
+        elif mutation_chooser < 0.35:
             body.switch_brain(rng, brain)
 
             if config.CONTROLLERS == -1:
@@ -320,7 +320,11 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
         child2.body.children[parent_2_branch_chooser] = copy.deepcopy(parent1.body.children[parent_1_branch_chooser])
 
         child1.body.children[parent_1_branch_chooser].rotation = (
-            rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value, RightAngles.DEG_270.value]))
+            rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value,
+                        RightAngles.DEG_270.value]))
+        child2.body.children[parent_2_branch_chooser].rotation = (
+            rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value,
+                        RightAngles.DEG_270.value]))
 
         return child1, child2
 

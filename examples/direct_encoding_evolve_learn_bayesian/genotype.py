@@ -90,13 +90,13 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
 
         if len(child_1_brain.keys()) == 0:
             new_uuid = uuid.uuid4()
-            child_1_brain = {new_uuid: np.array([])}
+            child_1_brain = {new_uuid: np.array(rng.random(4))}
 
         if len(child_2_brain.keys()) == 0:
             new_uuid = uuid.uuid4()
-            child_2_brain = {new_uuid: np.array([])}
+            child_2_brain = {new_uuid: np.array(rng.random(4))}
 
-        return Genotype(body=child1_body.body, brain=child_1_brain), Genotype(body=child1_body.body, brain=child_2_brain)
+        return Genotype(body=child1_body.body, brain=child_1_brain), Genotype(body=child2_body.body, brain=child_2_brain)
 
     def develop(self) -> ModularRobot:
         """

@@ -40,13 +40,13 @@ class BrainGenotype(orm.MappedAsDataclass):
             new_uuid = uuid.uuid4()
             if config.CONTROLLERS != -1:
                 new_uuid = uuid.UUID(int=i)
-            brain[new_uuid] = np.array(rng.random(5))
+            brain[new_uuid] = np.array(rng.random(4))
 
         return BrainGenotype(brain=brain)
 
-    def add_new(self):
+    def add_new(self, rng):
         new_uuid = uuid.uuid4()
-        self.brain[new_uuid] = np.array([])
+        self.brain[new_uuid] = np.array(rng.random(4))
         return new_uuid
 
     def remove_unused(self, used_uuids):
