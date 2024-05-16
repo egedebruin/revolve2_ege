@@ -287,12 +287,21 @@ def run_experiment(dbengine: Engine) -> None:
             Individual(genotype=genotype, fitness=fitness, original_generation=generation.generation_index + 1) for
             genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
         # Create the next population by selecting survivors.
-        population = select_survivors_remove_oldest(
-            population,
-            Population(
-                individuals=offspring_individuals
-            ),
-        )
+        if config.SELECT_STRATEGY == 'oldest':
+            population = select_survivors_remove_oldest(
+                population,
+                Population(
+                    individuals=offspring_individuals
+                ),
+            )
+        else:
+            population = select_survivors(
+                rng,
+                population,
+                Population(
+                    individuals=offspring_individuals
+                ),
+            )
         # Make it all into a generation and save it to the database.
         generation = Generation(
             experiment=experiment,
@@ -453,6 +462,7 @@ def read_args():
     parser.add_argument("--environment", required=True)
     parser.add_argument("--repetition", required=True)
     parser.add_argument("--evosearch", required=True)
+    parser.add_argument("--select", required=True)
     args = parser.parse_args()
     if args.learn == '1':
         config.NUM_RANDOM_SAMPLES = 1
@@ -464,9 +474,11 @@ def read_args():
     config.CONTROLLERS = int(args.controllers)
     config.ENVIRONMENT = args.environment
     config.EVOLUTIONARY_SEARCH = args.evosearch == '1'
+    config.SELECT_POINTS = args.select
+    controllers_string = 'adaptable' if config.CONTROLLERS == -1 else config.CONTROLLERS
     config.DATABASE_FILE = ("learn-" + str(args.learn) + "_evosearch-" + args.evosearch + "_controllers-" +
-                            str(args.controllers) + "_environment-" + args.environment + "_" + str(
-                args.repetition) + ".sqlite")
+                            str(controllers_string) + "_select-" + args.select + "_environment-" + args.environment +
+                            "_" + str(args.repetition) + ".sqlite")
 
 
 def main() -> None:
