@@ -31,7 +31,7 @@ def flat(size: Vector2 = Vector2([20.0, 20.0])) -> Terrain:
     )
 
 
-def flat_thin(length: float = 30.0) -> Terrain:
+def flat_thin(length: float = 20.0) -> Terrain:
     size = Vector2([3.0, length])
     heights = []
     for i in range(10):
@@ -45,7 +45,7 @@ def flat_thin(length: float = 30.0) -> Terrain:
             GeometryHeightmap(
                 pose=Pose(position=Vector3([0, size[1] - 1, 0])),
                 mass=0.0,
-                size=Vector3([size[0], size[1], 0]),
+                size=Vector3([size[0], size[1], 1.0]),
                 base_thickness=0.1,
                 heights=heights,
             )
@@ -72,12 +72,15 @@ def gradient(size: Vector2 = Vector2([20.0, 20.0]), angle=0.0) -> Terrain:
     )
 
 
-def hills(length: float = 30.0, height=0.0, num_edges=100) -> Terrain:
+def hills(length: float = 10.0, height=0.0, num_edges=50) -> Terrain:
     size = Vector2([3.0, length])
     heights = []
     for i in range(num_edges):
         row_height = []
         for j in range(num_edges):
+            if j > num_edges * 0.9:
+                row_height.append(0)
+                continue
             if j % (num_edges/20) == 0.0:
                 row_height.append(height)
             else:
@@ -97,7 +100,7 @@ def hills(length: float = 30.0, height=0.0, num_edges=100) -> Terrain:
     )
 
 
-def steps(length: float = 30.0, height=0.0, num_edges=100) -> Terrain:
+def steps(length: float = 10.0, height=0.0, num_edges=30) -> Terrain:
     size = Vector2([3.0, length])
 
     heights = []
@@ -175,7 +178,7 @@ def thin_crater(
 
     for i in range(num_edges[0]):
         for j in range(num_edges[1]):
-            if j > num_edges[1] * 0.96:
+            if j > num_edges[1] * 0.9:
                 heightmap[i, j] = 0
             if i == (num_edges[0]/2 - (wanted_size/2)/size[0] * num_edges[0]) or i == (num_edges[0]/2 +(wanted_size/2)/size[0] * num_edges[0]):
                 heightmap[i, j] = 2
