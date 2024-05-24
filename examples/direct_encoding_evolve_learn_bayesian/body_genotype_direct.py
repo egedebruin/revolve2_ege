@@ -1,6 +1,6 @@
 import copy
 import uuid
-from abc import abstractmethod
+from pyrr import Vector3
 
 import numpy as np
 import sqlalchemy.orm as orm
@@ -20,6 +20,12 @@ class ModuleGenotype:
     possible_children: list
     type: str
     body_module = None
+    reverse_rotation = {
+        RightAngles.DEG_0.value: RightAngles.DEG_180.value,
+        RightAngles.DEG_90.value: RightAngles.DEG_270.value,
+        RightAngles.DEG_180.value: 0.0,
+        RightAngles.DEG_270.value: RightAngles.DEG_90.value
+    }
 
     def __init__(self, rotation):
         self.rotation = rotation
@@ -27,48 +33,42 @@ class ModuleGenotype:
 
     def develop(self, body, grid=None):
         if grid is None:
-            grid = []
-        for direction, module in self.children.items():
-            new_module = module.get_body_module()
-            setattr(self.body_module, direction, new_module)
-            module.develop(body, grid)
+            grid = [Vector3([0, 0, 0])]
+        for directions, module in self.children.items():
+            if isinstance(directions, str):
+                directions = [directions]
+            for direction in directions:
+                new_module = module.get_body_module()
+                setattr(self.body_module, direction, new_module)
+                module.develop(body, grid)
 
-            grid_position = body.grid_position(new_module)
-            if grid_position not in grid:
-                grid.append(grid_position)
-            else:
-                setattr(self.body_module, direction, None)
-                continue
+                grid_position = body.grid_position(new_module)
+                if grid_position not in grid:
+                    grid.append(grid_position)
+                else:
+                    setattr(self.body_module, direction, None)
+                    continue
 
     def get_body_module(self):
         pass
 
-    def add_random_module(self, rng: np.random.Generator, brain: BrainGenotype):
-        direction_chooser = rng.choice(self.possible_children)
-
-        if direction_chooser in self.children:
-            self.children[direction_chooser].add_random_module(rng, brain)
-        else:
-            self.children[direction_chooser] = self.choose_random_module(rng, brain)
-
     def add_random_module_to_connection(self, index: int, rng: np.random.Generator, brain: BrainGenotype):
-        for module in self.possible_children:
-            if module in self.children.keys():
-                index = self.children[module].add_random_module_to_connection(index, rng, brain)
-                if index == 0:
-                    return 0
+        for directions in self.possible_children:
+            if tuple(directions) in self.children.keys():
+                index = self.children[tuple(directions)].add_random_module_to_connection(index, rng, brain)
             else:
                 if index == 1:
-                    self.children[module] = self.choose_random_module(rng, brain)
-                    return 0
+                    self.children[tuple(directions)] = self.choose_random_module(rng, brain)
                 index -= 1
+            if index == 0:
+                return 0
         return index
 
     def get_amount_possible_connections(self):
         possible_connections = 0
-        for module in self.possible_children:
-            if module in self.children.keys():
-                possible_connections += self.children[module].get_amount_possible_connections()
+        for directions in self.possible_children:
+            if tuple(directions) in self.children.keys():
+                possible_connections += self.children[tuple(directions)].get_amount_possible_connections()
             else:
                 possible_connections += 1
         return possible_connections
@@ -142,14 +142,17 @@ class ModuleGenotype:
     def serialize(self):
         serialized = {'type': self.type, 'rotation': self.rotation, 'children': {}}
 
-        for direction, module in self.children.items():
-            serialized['children'][direction] = module.serialize()
+        for directions, module in self.children.items():
+            direction_string = ",".join(directions)
+            serialized['children'][direction_string] = module.serialize()
 
         return serialized
 
     def deserialize(self, serialized):
         self.type = serialized['type']
         for direction, child in serialized['children'].items():
+            if isinstance(direction, str):
+                direction = tuple(map(str, direction.split(',')))
             if child['type'] == 'brick':
                 child_object = BrickGenotype(child['rotation'])
             else:
@@ -177,7 +180,7 @@ class ModuleGenotype:
 
 
 class CoreGenotype(ModuleGenotype):
-    possible_children = ['left', 'right', 'front', 'back', 'down', 'up']
+    possible_children = [['left', 'right'], ['front', 'back'], ['up'], ['down']]
     type = 'core'
     rotation = 0.0
 
@@ -195,7 +198,7 @@ class CoreGenotype(ModuleGenotype):
 
 
 class BrickGenotype(ModuleGenotype):
-    possible_children = ['left', 'right', 'front', 'up', 'down']
+    possible_children = [['left'], ['right'], ['front'], ['up'], ['down']]
     type = 'brick'
 
     def get_body_module(self):
@@ -204,7 +207,7 @@ class BrickGenotype(ModuleGenotype):
 
 
 class HingeGenotype(ModuleGenotype):
-    possible_children = ['attachment']
+    possible_children = [['attachment']]
     brain_index = -1
     type = 'hinge'
 

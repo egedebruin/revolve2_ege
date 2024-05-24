@@ -45,7 +45,7 @@ class Evaluator:
         # self._terrain = terrains.crater((10, 10), 0.2, 0, 0.1)
 
         if config.ENVIRONMENT == 'flat':
-            self._terrain = terrains.flat()
+            self._terrain = terrains.flat_thin()
         elif config.ENVIRONMENT == 'hills':
             self._terrain = terrains.hills(height=0.35)
         elif config.ENVIRONMENT == 'steps':

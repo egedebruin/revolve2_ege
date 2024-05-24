@@ -287,14 +287,14 @@ def run_experiment(dbengine: Engine) -> None:
             Individual(genotype=genotype, fitness=fitness, original_generation=generation.generation_index + 1) for
             genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
         # Create the next population by selecting survivors.
-        if config.SELECT_STRATEGY == 'oldest':
+        if config.SELECT_STRATEGY == 'newest':
             population = select_survivors_remove_oldest(
                 population,
                 Population(
                     individuals=offspring_individuals
                 ),
             )
-        else:
+        elif config.SELECT_STRATEGY == 'tournament':
             population = select_survivors(
                 rng,
                 population,
@@ -302,6 +302,8 @@ def run_experiment(dbengine: Engine) -> None:
                     individuals=offspring_individuals
                 ),
             )
+        else:
+            raise Exception("Unrecognized SELECT_STRATEGY")
         # Make it all into a generation and save it to the database.
         generation = Generation(
             experiment=experiment,
