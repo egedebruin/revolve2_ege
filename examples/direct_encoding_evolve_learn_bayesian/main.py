@@ -472,7 +472,7 @@ def read_args():
     else:
         config.NUM_RANDOM_SAMPLES = int(int(args.learn) / 10)
         config.LEARN_NUM_GENERATIONS = int(int(args.learn) - int(args.learn) / 10)
-    config.NUM_GENERATIONS = (150000 / (int(args.learn) * 10)) - 10
+    config.NUM_GENERATIONS = (100000 / (int(args.learn) * 10)) - 10
     config.CONTROLLERS = int(args.controllers)
     config.ENVIRONMENT = args.environment
     config.EVOLUTIONARY_SEARCH = args.evosearch == '1'

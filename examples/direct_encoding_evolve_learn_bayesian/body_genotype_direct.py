@@ -26,21 +26,37 @@ class ModuleGenotype:
         RightAngles.DEG_180.value: 0.0,
         RightAngles.DEG_270.value: RightAngles.DEG_90.value
     }
+    reverse_direction = {
+        'left': 'right',
+        'up': 'down',
+        'front': 'front',
+        'right': 'left',
+        'down': 'up',
+        'back': 'back',
+        'attachment': 'attachment'
+    }
 
     def __init__(self, rotation):
         self.rotation = rotation
         self.children = {}
 
-    def develop(self, body, grid=None):
+    def develop(self, body, grid=None, mirror=False, reverse=False):
         if grid is None:
             grid = [Vector3([0, 0, 0])]
         for directions, module in self.children.items():
             if isinstance(directions, str):
                 directions = [directions]
+            is_mirror = mirror
+            is_reverse = reverse
             for direction in directions:
-                new_module = module.get_body_module()
+                new_module = module.get_body_module(False)
+                if mirror and reverse:
+                    direction = self.reverse_direction[direction]
                 setattr(self.body_module, direction, new_module)
-                module.develop(body, grid)
+
+                if direction == 'down' or direction == 'up':
+                    is_reverse = not reverse
+                module.develop(body, grid, is_mirror, is_reverse)
 
                 grid_position = body.grid_position(new_module)
                 if grid_position not in grid:
@@ -49,8 +65,11 @@ class ModuleGenotype:
                     setattr(self.body_module, direction, None)
                     continue
 
-    def get_body_module(self):
-        pass
+                is_mirror = not is_mirror
+
+    def get_body_module(self, reverse):
+        if reverse:
+            self.rotation = self.reverse_rotation[self.rotation]
 
     def add_random_module_to_connection(self, index: int, rng: np.random.Generator, brain: BrainGenotype):
         for directions in self.possible_children:
@@ -180,13 +199,13 @@ class ModuleGenotype:
 
 
 class CoreGenotype(ModuleGenotype):
-    possible_children = [['left', 'right'], ['front', 'back'], ['up'], ['down']]
+    possible_children = [['left'], ['right'], ['front', 'back'], ['up'], ['down']]
     type = 'core'
     rotation = 0.0
 
-    def develop(self, body, grid=None):
+    def develop(self, body, grid=None, mirror=False, reverse=False):
         self.body_module = body.core_v1
-        super().develop(body)
+        super().develop(body, mirror=mirror, reverse=reverse)
 
     def get_amount_nodes(self):
         nodes = 0
@@ -201,7 +220,8 @@ class BrickGenotype(ModuleGenotype):
     possible_children = [['left'], ['right'], ['front'], ['up'], ['down']]
     type = 'brick'
 
-    def get_body_module(self):
+    def get_body_module(self, reverse):
+        super().get_body_module(reverse)
         self.body_module = BrickV1(self.rotation)
         return self.body_module
 
@@ -211,11 +231,12 @@ class HingeGenotype(ModuleGenotype):
     brain_index = -1
     type = 'hinge'
 
-    def develop(self, body, grid=None):
-        super().develop(body)
+    def develop(self, body, grid=None, mirror=False, reverse=False):
+        super().develop(body, mirror=mirror, reverse=reverse)
         self.body_module.map_uuid = self.brain_index
 
-    def get_body_module(self):
+    def get_body_module(self, reverse):
+        super().get_body_module(reverse)
         self.body_module = ActiveHingeV1(self.rotation)
         return self.body_module
 
