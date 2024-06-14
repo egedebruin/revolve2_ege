@@ -472,11 +472,11 @@ def read_args():
     else:
         config.NUM_RANDOM_SAMPLES = int(int(args.learn) / 10)
         config.LEARN_NUM_GENERATIONS = int(int(args.learn) - int(args.learn) / 10)
-    config.NUM_GENERATIONS = (100000 / (int(args.learn) * 10)) - 10
+    config.NUM_GENERATIONS = (config.FUNCTION_EVALUATIONS / (int(args.learn) * config.OFFSPRING_SIZE))
     config.CONTROLLERS = int(args.controllers)
     config.ENVIRONMENT = args.environment
     config.EVOLUTIONARY_SEARCH = args.evosearch == '1'
-    config.SELECT_POINTS = args.select
+    config.SELECT_STRATEGY = args.select
     controllers_string = 'adaptable' if config.CONTROLLERS == -1 else config.CONTROLLERS
     config.DATABASE_FILE = ("learn-" + str(args.learn) + "_evosearch-" + args.evosearch + "_controllers-" +
                             str(controllers_string) + "_select-" + args.select + "_environment-" + args.environment +

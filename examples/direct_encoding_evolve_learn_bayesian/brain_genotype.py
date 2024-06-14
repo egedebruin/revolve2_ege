@@ -49,7 +49,7 @@ class BrainGenotype(orm.MappedAsDataclass):
         self.brain[new_uuid] = np.array(rng.random(4))
         return new_uuid
 
-    def remove_unused(self, used_uuids):
+    def remove_unused(self, used_uuids, rng):
         difference = [item for item in list(self.brain.keys()) if item not in list(used_uuids)]
 
         for remove_item in difference:
@@ -57,7 +57,7 @@ class BrainGenotype(orm.MappedAsDataclass):
 
         if len(self.brain.keys()) == 0:
             new_uuid = uuid.uuid4()
-            self.brain = {new_uuid: np.array([])}
+            self.brain = {new_uuid: np.array(rng.random(4))}
 
     def mutate_brain(self, rng: np.random.Generator):
         brain = BrainGenotype(brain=self.brain.copy())

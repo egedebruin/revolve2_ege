@@ -12,6 +12,7 @@ from revolve2.ci_group import fitness_functions, terrains
 from revolve2.ci_group.simulation_parameters import make_standard_batch_parameters
 from revolve2.modular_robot import ModularRobot
 from revolve2.modular_robot.body.base import Body
+from revolve2.modular_robot.body.v1 import ActiveHingeV1, BrickV1
 from revolve2.modular_robot_simulation import (
     ModularRobotScene,
     Terrain,
@@ -65,6 +66,9 @@ class Evaluator:
         :param robot: robot to evaluate.
         :returns: Fitnesses of the solutions.
         """
+
+        if len(robot.body.find_modules_of_type(ActiveHingeV1)) + len(robot.body.find_modules_of_type(BrickV1)) > config.MAX_NUMBER_OF_MODULES:
+            return 0
 
         # Create the scenes.
         scenes = []

@@ -58,6 +58,8 @@ class SineBrainInstance(BrainInstance):
         target_list = []
         for active_hinge, amplitude, phase, touch_weight, sensor_phase_offset \
                 in zip(self.active_hinges, self.amplitudes, self.phases, self.touch_weights, self.sensor_phase_offset):
+            if active_hinge.reverse_phase:
+                phase = phase + math.pi
             touch_sensor = control_interface.get_touch_sensor(active_hinge)
             for neighbour in active_hinge.neighbours(2):
                 if isinstance(neighbour, ActiveHinge):

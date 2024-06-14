@@ -15,6 +15,7 @@ class ActiveHinge(Module):
     ATTACHMENT = 0
 
     _map_uuid: UUID
+    _reverse_phase: bool
 
     _range: float
     _effort: float
@@ -146,6 +147,24 @@ class ActiveHinge(Module):
         :param new_uuid: The uuid to map to brain
         """
         self._map_uuid = new_uuid
+
+    @property
+    def reverse_phase(self) -> bool | None:
+        """
+        Get the module attached to this hinge.
+
+        :returns: The attached module.
+        """
+        return self._reverse_phase
+
+    @reverse_phase.setter
+    def reverse_phase(self, new_reverse_phase: bool) -> None:
+        """
+        Set the module attached to this hinge.
+
+        :param new_reverse_phase: The uuid to map to brain
+        """
+        self._reverse_phase = new_reverse_phase
 
     @property
     def static_friction(self) -> float:
