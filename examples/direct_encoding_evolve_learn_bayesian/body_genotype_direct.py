@@ -266,7 +266,7 @@ class HingeGenotype(ModuleGenotype):
     def develop(self, body, grid, mirror, reverse):
         super().develop(body, grid, mirror, reverse)
         self.body_module.map_uuid = self.brain_index
-        self.body_module.reverse_phase = self.reverse_phase_value
+        self.body_module.reverse_phase = self.reverse_phase_value and mirror
 
     def get_body_module(self, reverse):
         super().get_body_module(reverse)
