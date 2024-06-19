@@ -36,40 +36,24 @@ class ModuleGenotype:
         'back': 'back',
         'attachment': 'attachment'
     }
-    reverse_direction_2 = {
-        'right': 'right',
-        'up': 'down',
-        'front': 'front',
-        'left': 'left',
-        'down': 'up',
-        'back': 'back',
-        'attachment': 'attachment'
-    }
 
     def __init__(self, rotation):
         self.rotation = rotation
         self.children = {}
 
-    def develop(self, body, grid, mirror, reverse):
+    def develop(self, body, grid, mirror):
         if grid is None:
             grid = [Vector3([0, 0, 0])]
         for directions, module in self.children.items():
             if isinstance(directions, str):
                 directions = [directions]
             is_mirror = mirror
-            is_reverse = reverse
             for direction in directions:
                 new_module = module.get_body_module(is_mirror)
                 if mirror:
-                    if reverse:
-                        direction = self.reverse_direction_2[direction]
-                    else:
-                        direction = self.reverse_direction[direction]
+                    direction = self.reverse_direction[direction]
                 setattr(self.body_module, direction, new_module)
-
-                if direction == 'down' or direction == 'up':
-                    is_reverse = not reverse
-                module.develop(body, grid, is_mirror, is_reverse)
+                module.develop(body, grid, is_mirror)
 
                 grid_position = body.grid_position(new_module)
                 if grid_position not in grid:
@@ -222,9 +206,9 @@ class CoreGenotype(ModuleGenotype):
     rotation = 0.0
     reverse_phase = False
 
-    def develop(self, body, grid, mirror, reverse):
+    def develop(self, body, grid, mirror):
         self.body_module = body.core_v1
-        super().develop(body, grid, mirror, reverse)
+        super().develop(body, grid, mirror)
 
     def get_amount_nodes(self):
         nodes = 0
@@ -263,8 +247,8 @@ class HingeGenotype(ModuleGenotype):
     reverse_phase_value = False
     type = 'hinge'
 
-    def develop(self, body, grid, mirror, reverse):
-        super().develop(body, grid, mirror, reverse)
+    def develop(self, body, grid, mirror):
+        super().develop(body, grid, mirror)
         self.body_module.map_uuid = self.brain_index
         self.body_module.reverse_phase = self.reverse_phase_value and mirror
 
@@ -396,7 +380,7 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
     def develop_body(self):
         body = BodyV1()
         self.body.reverse_phase_function(self.body.reverse_phase and config.REVERSE_PHASE)
-        self.body.develop(body, None, False, False)
+        self.body.develop(body, None, False)
         return body
 
 
