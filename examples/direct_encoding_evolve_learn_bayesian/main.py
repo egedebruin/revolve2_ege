@@ -110,7 +110,7 @@ def select_parent(
     )
 
 
-def select_survivors_remove_oldest(original_population: Population, offspring_population: Population) -> Population:
+def select_survivors_newest(original_population: Population, offspring_population: Population) -> Population:
     original_individuals = []
     for individual in original_population.individuals:
         original_individuals.append((individual.genotype, individual.original_generation, individual.fitness))
@@ -130,7 +130,7 @@ def select_survivors_remove_oldest(original_population: Population, offspring_po
     )
 
 
-def select_survivors(
+def select_survivors_tournament(
     rng: np.random.Generator,
     original_population: Population,
     offspring_population: Population,
@@ -173,6 +173,38 @@ def select_survivors(
             )
             for i in offspring_survivors
         ]
+    )
+
+
+def select_survivors_best(
+    original_population: Population,
+    offspring_population: Population,
+) -> Population:
+    """
+    Select survivors using a tournament.
+
+    :param rng: Random number generator.
+    :param original_population: The population the parents come from.
+    :param offspring_population: The offspring.
+    :returns: A newly created population.
+    """
+    individuals = []
+    for individual in original_population.individuals:
+        individuals.append((individual.genotype, individual.fitness, individual.original_generation))
+    for individual in offspring_population.individuals:
+        individuals.append((individual.genotype, individual.fitness, individual.original_generation))
+    individuals = sorted(individuals, key=lambda x: (-x[1]))
+    survivors = individuals[:config.POPULATION_SIZE]
+
+    return Population(
+        individuals=[
+                        Individual(
+                            genotype=genotype,
+                            fitness=fitness,
+                            original_generation=original_generation
+                        )
+                        for (genotype, fitness, original_generation) in survivors
+                    ]
     )
 
 
@@ -277,6 +309,7 @@ def run_experiment(dbengine: Engine) -> None:
             offspring_genotypes = []
             for [parent_i] in parents:
                 child_genotype = population.individuals[parent_i].genotype.mutate(rng)
+                child_genotype.parent_1 = population.individuals[parent_i].genotype.id
                 offspring_genotypes.append(child_genotype)
 
         # Evaluate the offspring.
@@ -288,15 +321,22 @@ def run_experiment(dbengine: Engine) -> None:
             genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
         # Create the next population by selecting survivors.
         if config.SELECT_STRATEGY == 'newest':
-            population = select_survivors_remove_oldest(
+            population = select_survivors_newest(
                 population,
                 Population(
                     individuals=offspring_individuals
                 ),
             )
         elif config.SELECT_STRATEGY == 'tournament':
-            population = select_survivors(
+            population = select_survivors_tournament(
                 rng,
+                population,
+                Population(
+                    individuals=offspring_individuals
+                ),
+            )
+        elif config.SELECT_STRATEGY == 'best':
+            population = select_survivors_best(
                 population,
                 Population(
                     individuals=offspring_individuals

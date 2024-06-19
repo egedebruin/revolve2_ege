@@ -348,11 +348,11 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
                 body.add_random_module_to_connection(connection_to_add, rng, brain)
         elif mutation_chooser < 0.5:
             for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
-                amount_nodes = body.get_amount_nodes()
+                amount_nodes = body.get_amount_leaf_nodes()
                 if amount_nodes == 0:
                     break
                 node_to_remove = rng.integers(1, amount_nodes + 1)
-                body.remove_node(node_to_remove)
+                body.remove_leaf_node(node_to_remove)
 
             if config.CONTROLLERS == -1:
                 used_brains = body.check_for_brains()
