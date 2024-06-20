@@ -53,7 +53,7 @@ class Evaluator:
             self._terrain = terrains.steps(height=0.5)
         elif config.ENVIRONMENT == 'notsonoisy':
             self._terrain = terrains.thin_crater((10, 10), 0.1, 0, 0.1)
-        elif config.ENVIRONMENT == 'noisy3':
+        elif config.ENVIRONMENT == 'noisy':
             self._terrain = terrains.thin_crater((10, 10), 0.3, 0, 0.1)
         elif config.ENVIRONMENT == 'verynoisy':
             self._terrain = terrains.thin_crater((10, 10), 0.5, 0, 0.1)
