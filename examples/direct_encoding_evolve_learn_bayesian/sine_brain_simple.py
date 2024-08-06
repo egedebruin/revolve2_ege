@@ -12,14 +12,12 @@ class SineBrainInstance(BrainInstance):
 
     active_hinges: list[ActiveHinge]
     t: list[float]
-    amplitudes: list[float]
     phases: list[float]
     energy: float
 
     def __init__(
             self,
             active_hinges: list[ActiveHinge],
-            amplitudes: list[float],
             phases: list[float],
     ) -> None:
         """
@@ -28,7 +26,6 @@ class SineBrainInstance(BrainInstance):
         :param active_hinges: The active hinges to control.
         """
         self.active_hinges = active_hinges
-        self.amplitudes = amplitudes
         self.phases = phases
         self.t = [0.0] * len(active_hinges)
         self.energy = config.ENERGY
@@ -49,10 +46,10 @@ class SineBrainInstance(BrainInstance):
         if self.energy < 0:
             return
         i = 0
-        for active_hinge, amplitude, phase in zip(self.active_hinges, self.amplitudes, self.phases):
+        for active_hinge, phase in zip(self.active_hinges, self.phases):
             if active_hinge.reverse_phase:
                 phase = phase + (math.pi / config.FREQUENCY)
-            target = amplitude * math.sin(self.t[i] + phase * config.FREQUENCY)
+            target = math.sin(self.t[i] + phase * config.FREQUENCY)
             control_interface.set_active_hinge_target(active_hinge, target)
             self.t[i] += dt * config.FREQUENCY
             i += 1
@@ -64,13 +61,11 @@ class SineBrain(Brain):
     """The Sine brain."""
 
     active_hinges: list[ActiveHinge]
-    amplitudes: list[float]
     phases: list[float]
 
     def __init__(
         self,
         active_hinges: list[ActiveHinge],
-        amplitudes: list[float],
         phases: list[float],
     ) -> None:
         """
@@ -79,7 +74,6 @@ class SineBrain(Brain):
         :param active_hinges: The active hinges to control.
         """
         self.active_hinges = active_hinges
-        self.amplitudes = amplitudes
         self.phases = phases
 
     def make_instance(self) -> BrainInstance:
@@ -90,6 +84,5 @@ class SineBrain(Brain):
         """
         return SineBrainInstance(
             active_hinges=self.active_hinges,
-            amplitudes=self.amplitudes,
             phases=self.phases,
         )

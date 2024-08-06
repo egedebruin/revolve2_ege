@@ -85,15 +85,12 @@ class BrainGenotype(orm.MappedAsDataclass):
     def develop_brain(self, body: BodyV1):
         active_hinges = body.find_modules_of_type(ActiveHinge)
 
-        amplitudes = []
         phases = []
         for active_hinge in active_hinges:
-            amplitudes.append(self.brain[active_hinge.map_uuid][0])
             phases.append(self.brain[active_hinge.map_uuid][1] * 2 * math.pi)
 
         brain = SineBrain(
             active_hinges=active_hinges,
-            amplitudes=amplitudes,
             phases=phases
         )
 
