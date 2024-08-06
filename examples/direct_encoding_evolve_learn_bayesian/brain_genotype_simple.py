@@ -87,7 +87,7 @@ class BrainGenotype(orm.MappedAsDataclass):
 
         phases = []
         for active_hinge in active_hinges:
-            phases.append(self.brain[active_hinge.map_uuid][1] * 2 * math.pi)
+            phases.append(self.brain[active_hinge.map_uuid][0] * 2 * math.pi)
 
         brain = SineBrain(
             active_hinges=active_hinges,
