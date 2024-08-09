@@ -51,8 +51,8 @@ class SineBrainInstance(BrainInstance):
         i = 0
         for active_hinge, amplitude, phase in zip(self.active_hinges, self.amplitudes, self.phases):
             if active_hinge.reverse_phase:
-                phase = phase + (math.pi / config.FREQUENCY)
-            target = amplitude * math.sin(self.t[i] + phase * config.FREQUENCY)
+                phase = phase + math.pi
+            target = amplitude * math.sin(self.t[i] + phase)
             control_interface.set_active_hinge_target(active_hinge, target)
             self.t[i] += dt * config.FREQUENCY
             i += 1
