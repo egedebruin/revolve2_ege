@@ -74,6 +74,7 @@ def gradient(size: Vector2 = Vector2([20.0, 20.0]), angle=0.0) -> Terrain:
 
 def hills(length: float = 10.0, height=0.0, num_edges=50) -> Terrain:
     size = Vector2([3.0, length])
+    height = height/100
     heights = []
     for i in range(num_edges):
         row_height = []
@@ -92,7 +93,7 @@ def hills(length: float = 10.0, height=0.0, num_edges=50) -> Terrain:
             GeometryHeightmap(
                 pose=Pose(position=Vector3([0, size[1] - 1, 0])),
                 mass=0.0,
-                size=Vector3([size[0], size[1], height]),
+                size=Vector3([size[0], size[1], 100]),
                 base_thickness=0.1,
                 heights=heights,
             )
@@ -102,7 +103,7 @@ def hills(length: float = 10.0, height=0.0, num_edges=50) -> Terrain:
 
 def steps(length: float = 10.0, height=0.0, num_edges=30) -> Terrain:
     size = Vector2([3.0, length])
-
+    height = height/100
     heights = []
     for _ in range(num_edges):
         row_height = []
@@ -122,7 +123,7 @@ def steps(length: float = 10.0, height=0.0, num_edges=30) -> Terrain:
             GeometryHeightmap(
                 pose=Pose(position=Vector3([0, size[1] - 1, 0])),
                 mass=0.0,
-                size=Vector3([size[0], size[1], height]),
+                size=Vector3([size[0], size[1], 100]),
                 base_thickness=0.1,
                 heights=heights,
             )
