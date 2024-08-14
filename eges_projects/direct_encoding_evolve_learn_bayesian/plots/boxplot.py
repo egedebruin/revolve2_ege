@@ -5,13 +5,11 @@ from revolve2.experimentation.database import open_database_sqlite, OpenMethod
 from sqlalchemy import select
 
 from body_genotype_direct import CoreGenotype
-from experiment import Experiment
-from generation import Generation
-from genotype import Genotype
-from individual import Individual
-from population import Population
-
-from scipy.stats import wilcoxon
+from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.experiment import Experiment
+from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.generation import Generation
+from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.genotype import Genotype
+from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.individual import Individual
+from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.population import Population
 
 import matplotlib.pyplot as plt
 
