@@ -30,7 +30,7 @@ def number_of_brains(serialized_brain):
 def get_df(learn, evosearch, controllers, environment, survivor_select):
     database_name = f"learn-{learn}_evosearch-{evosearch}_controllers-{controllers}_select-{survivor_select}_environment-{environment}"
     print(database_name)
-    files = [file for file in os.listdir("results/1208") if file.startswith(database_name)]
+    files = [file for file in os.listdir("../results/1208") if file.startswith(database_name)]
     if len(files) == 0:
         return None
     dfs = []
