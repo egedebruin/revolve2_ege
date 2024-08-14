@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .._pose import Pose
 from ._sensor import Sensor
@@ -13,3 +13,6 @@ class IMUSensor(Sensor):
     """
 
     pose: Pose
+    type: str = field(
+        default="imu"
+    )  # The type attribute is used for the translation into XML formats.

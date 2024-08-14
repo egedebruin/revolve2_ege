@@ -29,6 +29,10 @@ Hardware setup for a V2 Robot
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 For instructions on  how to set up the hardware of a V2 core, refer to `<https://github.com/ci-group/robohat>`_.
 
+**Important:** For the V2 to work properly the `config.txt` on the RPi has to be changed.
+The following file contains the correct config content: `<https://github.com/ci-group/robohat/blob/main/config.txt>`_.
+On the RPi adjust the config in `/boot/config.txt` or on newer systems `/boot/firmware/config.txt`.
+
 ------------------
 Setting up the RPi
 ------------------
@@ -48,6 +52,10 @@ This step is the same for all types of hardware.
         * Hint: SSH is not enabled by default. The simplest way to enable it is using the :code:`raspi-config`.
 
     * If you want to SSH and don't know the IP of the RPi, you can use :code:`sudo nmap -sP <your ip>` on your machine to find all clients on your network.
+    * **For V2 robots:** You can establish a serial connection with the AUX input on the hat. To do so, connect the robohat with your device using a cable. Then use the following command to access the robohat: :code:`sudo screen <port to connect> 115200`.
+
+        * For linux users, the port is usually: :code:`/dev/ttyUSB0`.
+        * For mac users the port is usually: :code:`/dev/cu.usbserial`.
 
 ---------------------------
 Install Revolve2 on the RPi

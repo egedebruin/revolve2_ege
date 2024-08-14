@@ -44,9 +44,9 @@ class Body:
         while parent is not None and child_index is not None:
             child = parent.children.get(child_index)
             assert child is not None
-            assert np.isclose(child.rotation % (math.pi / 2.0), 0.0)
+            assert np.isclose(child.orientation.angle % (math.pi / 2.0), 0.0)
 
-            position = Quaternion.from_eulers((child.rotation, 0.0, 0.0)) * position
+            position = child.orientation * position
             position += Vector3([1, 0, 0])
 
             attachment_point = parent.attachment_points.get(child_index)
@@ -61,22 +61,31 @@ class Body:
         return position
 
     @classmethod
-    def __find_recur(cls, module: Module, module_type: Type[TModule]) -> list[TModule]:
+    def __find_recur(
+        cls, module: Module, module_type: Type[TModule], exclude: list[Type[TModule]]
+    ) -> list[TModule]:
         modules = []
-        if isinstance(module, module_type):
+        if isinstance(module, module_type) and not any(
+            [isinstance(module, e) for e in exclude]
+        ):
             modules.append(module)
         for child in module.children.values():
-            modules.extend(cls.__find_recur(child, module_type))
+            modules.extend(cls.__find_recur(child, module_type, exclude))
         return modules
 
-    def find_modules_of_type(self, module_type: Type[TModule]) -> list[TModule]:
+    def find_modules_of_type(
+        self, module_type: Type[TModule], exclude: list[Type[TModule]] | None = None
+    ) -> list[TModule]:
         """
         Find all Modules of a certain type in the robot.
 
         :param module_type: The type.
+        :param exclude: Module types to be excluded in search.
         :return: The list of Modules.
         """
-        return self.__find_recur(self._core, module_type)
+        return self.__find_recur(
+            self._core, module_type, [] if exclude is None else exclude
+        )
 
     def to_grid(self) -> tuple[NDArray[TModuleNP], Vector3[np.int_]]:
         """
@@ -134,11 +143,9 @@ class _GridMaker(Generic[TModuleNP]):
         for child_index, attachment_point in module.attachment_points.items():
             child = module.children.get(child_index)
             if child is not None:
-                assert np.isclose(child.rotation % (math.pi / 2.0), 0.0)
+                assert np.isclose(child.orientation.angle % (math.pi / 2.0), 0.0)
                 rotation = (
-                    orientation
-                    * attachment_point.orientation
-                    * Quaternion.from_eulers([child.rotation, 0, 0])
+                    orientation * attachment_point.orientation * child.orientation
                 )
                 self._make_grid_recur(
                     child, position + rotation * Vector3([1.0, 0.0, 0.0]), rotation

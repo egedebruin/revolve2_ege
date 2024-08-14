@@ -5,7 +5,7 @@ from ..base import Brick
 
 
 class BrickV1(Brick):
-    """A brick module for a modular robot."""
+    """A brick module for a v1 modular robot."""
 
     def __init__(self, rotation: float | RightAngles):
         """
@@ -18,4 +18,5 @@ class BrickV1(Brick):
             bounding_box=Vector3([0.0603, 0.0603, 0.0603]),
             mass=0.030,
             child_offset=0.0603 / 2.0,
+            sensors=[],
         )

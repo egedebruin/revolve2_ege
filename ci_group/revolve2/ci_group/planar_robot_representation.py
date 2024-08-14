@@ -1,4 +1,5 @@
 """Draw 2D representations of Modular Robots. Based on Karine Miras` Method."""
+
 import os
 import time
 from typing import Any
@@ -106,7 +107,7 @@ def _draw_module(
             context.set_source_rgb(255, 255, 0)  # Yellow
         case ActiveHinge():
             context.set_source_rgb(1, 0, 0)  # Red
-            if module.rotation == 0:
+            if np.isclose(module.orientation.angle, 0.0):
                 context.set_source_rgb(1.0, 0.4, 0.4)  # Flesh Color
         case Brick():
             context.set_source_rgb(0, 0, 1)  # Blue

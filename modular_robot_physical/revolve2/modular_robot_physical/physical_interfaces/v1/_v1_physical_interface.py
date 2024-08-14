@@ -2,7 +2,9 @@ import math
 import time
 from typing import Sequence
 
+import numpy as np
 import pigpio
+from numpy.typing import NDArray
 from pyrr import Vector3
 
 from .._physical_interface import PhysicalInterface
@@ -53,7 +55,7 @@ class V1PhysicalInterface(PhysicalInterface):
 
         This can be a fairly slow operation.
 
-        :param pins: The GPIO pin numbers.
+        :param pins: The GPIO pins.
         :param targets: The target angles.
         """
         if not self._dry:
@@ -98,7 +100,7 @@ class V1PhysicalInterface(PhysicalInterface):
         """
         Get the current position of multiple servos.
 
-        :param pins: The GPIO pin numbers.
+        :param pins: The GPIO pins.
         :raises NotImplementedError: If getting the servo position is not supported on this hardware.
         """
         raise NotImplementedError("Getting servo position not supported on v1 harware.")
@@ -124,5 +126,13 @@ class V1PhysicalInterface(PhysicalInterface):
         Get the specific force from the IMU.
 
         :raises NotImplementedError: Always.
+        """
+        raise NotImplementedError()
+
+    def get_camera_view(self) -> NDArray[np.uint8]:
+        """
+        Get the current view from the camera.
+
+        :raises NotImplementedError: If the Camera is not supported on this hardware.
         """
         raise NotImplementedError()

@@ -1,11 +1,11 @@
-import uuid
-from dataclasses import dataclass, field
+from pyrr import Quaternion, Vector3
 
 from ._sensor import Sensor
 
 
-@dataclass
 class ActiveHingeSensor(Sensor):
     """A sensors for an active hinge that measures its angle."""
 
-    _uuid: uuid.UUID = field(init=False, default_factory=uuid.uuid1)
+    def __init__(self) -> None:
+        """Initialize the ActiveHinge sensor."""
+        super().__init__(Quaternion(), Vector3())

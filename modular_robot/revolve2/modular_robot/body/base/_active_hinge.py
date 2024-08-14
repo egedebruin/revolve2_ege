@@ -6,11 +6,11 @@ from .._attachment_point import AttachmentPoint
 from .._color import Color
 from .._module import Module
 from .._right_angles import RightAngles
-from ..sensors import ActiveHingeSensor
+from ..sensors import Sensor
 
 
 class ActiveHinge(Module):
-    """An Active Hinge."""
+    """An Active Hinge Module."""
 
     ATTACHMENT = 0
 
@@ -35,7 +35,6 @@ class ActiveHinge(Module):
     _armature: float
     _pid_gain_p: float
     _pid_gain_d: float
-    _sensor: ActiveHingeSensor | None
 
     def __init__(
         self,
@@ -58,6 +57,7 @@ class ActiveHinge(Module):
         pid_gain_p: float,
         pid_gain_d: float,
         child_offset: float,
+        sensors: list[Sensor],
     ):
         """
         Initialize this object.
@@ -81,6 +81,7 @@ class ActiveHinge(Module):
         :param pid_gain_p: Proportional gain of the pid position controller.
         :param pid_gain_d: Derivative gain of the pid position controller.
         :param child_offset: The offset of children on the attachment point.
+        :param sensors: The sensors associated with this module.
         """
         self._static_friction = static_friction
         self._dynamic_friction = dynamic_friction
@@ -107,8 +108,17 @@ class ActiveHinge(Module):
                 rotate=False
             ),
         }
-
-        super().__init__(rotation, Color(255, 255, 255, 255), attachment_points)
+        """
+        The base module only has orientation as its parameter since not all modules are square.
+        
+        Here we covert the angle of the module to its orientation in space.
+        """
+        orientation = Quaternion.from_eulers(
+            [rotation if isinstance(rotation, float) else rotation.value, 0, 0]
+        )
+        super().__init__(
+            orientation, Color(255, 255, 255, 255), attachment_points, sensors
+        )
 
         self._sensor = None
 
@@ -216,7 +226,7 @@ class ActiveHinge(Module):
         """
         Get the bounding box of the first servo part.
 
-        Sizes are total length, not half length from origin.
+        Sizes are total length, not half-length from origin.
         :return: Vector3 with sizes of bbox in x,y,z dimension (m).
         """
         return self._servo1_bounding_box
@@ -226,7 +236,7 @@ class ActiveHinge(Module):
         """
         Get the bounding box of the second servo part.
 
-        Sizes are total length, not half length from origin.
+        Sizes are total length, not half-length from origin.
         :return: Vector3 with sizes of bbox in x,y,z dimension (m).
         """
         return self._servo2_bounding_box
@@ -236,7 +246,7 @@ class ActiveHinge(Module):
         """
         Get the bounding box of the frame.
 
-        Sizes are total length, not half length from origin.
+        Sizes are total length, not half-length from origin.
         :return: Vector3 with sizes of bbox in x,y,z dimension (m).
         """
         return self._frame_bounding_box
@@ -298,7 +308,7 @@ class ActiveHinge(Module):
     @property
     def armature(self) -> float:
         """
-        Get thearmature of the joint.
+        Get the armature of the joint.
 
         This represents the inertia of the motor itself when nothing is attached.
 
@@ -323,18 +333,3 @@ class ActiveHinge(Module):
         :return: The value.
         """
         return self._pid_gain_d
-
-    @property
-    def sensor(self) -> ActiveHingeSensor | None:
-        """
-        Get the sensor.
-
-        :return: The value.
-        """
-        return self._sensor
-
-    @sensor.setter
-    def sensor(self, sensor: ActiveHingeSensor) -> None:
-        if self._sensor is not None:
-            raise RuntimeError("Sensor has already been set.")
-        self._sensor = sensor

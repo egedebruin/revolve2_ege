@@ -2,16 +2,22 @@ import threading
 import time
 from typing import Any, Sequence
 
+import numpy as np
+from numpy.typing import NDArray
 from pyrr import Vector3
 
 from .._hardware_type import HardwareType
 from .._protocol_version import PROTOCOL_VERSION
 from ..physical_interfaces import PhysicalInterface
 from ..robot_daemon_api import robot_daemon_protocol_capnp
+from ..robot_daemon_api.robot_daemon_protocol_capnp import Image as capnpImage
+from ..robot_daemon_api.robot_daemon_protocol_capnp import Vector3 as capnpVector3
+
+Pin = int
 
 
 class RoboServerImpl(robot_daemon_protocol_capnp.RoboServer.Server):  # type: ignore
-    """Implements the Cap'n Proto interface."""
+    """Implements the Cap'n Proto interface, run on the physical modular robot."""
 
     _CAREFUL_STEP = 0.1
 
@@ -25,10 +31,10 @@ class RoboServerImpl(robot_daemon_protocol_capnp.RoboServer.Server):  # type: ig
     _update_loop_thread: threading.Thread
     _lock: threading.Lock
 
-    _targets: dict[int, float]  # pin -> target
-    _current_targets: dict[int, float]  # pin -> target
+    _targets: dict[Pin, float]  # pin -> target
+    _current_targets: dict[Pin, float]  # pin -> target
 
-    _measured_hinge_positions: dict[int, float]  # pin -> position
+    _measured_hinge_positions: dict[Pin, float]  # pin -> position
     _battery: float
 
     def __init__(
@@ -63,6 +69,7 @@ class RoboServerImpl(robot_daemon_protocol_capnp.RoboServer.Server):  # type: ig
         self._battery = 0.0
 
     def _update_loop(self) -> None:
+        """Update the robot server."""
         assert self._active_pins is not None
 
         while self._enabled:
@@ -98,7 +105,9 @@ class RoboServerImpl(robot_daemon_protocol_capnp.RoboServer.Server):  # type: ig
                                     self._CAREFUL_STEP,
                                 )
                             )
-                        case HardwareType.v2:  # careful mode disabled for v2. enable when running into power failures.
+                        case (
+                            HardwareType.v2
+                        ):  # careful mode disabled for v2. enable when running into power failures.
                             targets.append(desired_target)
 
             for pin, target in zip(pins, targets):
@@ -215,8 +224,6 @@ class RoboServerImpl(robot_daemon_protocol_capnp.RoboServer.Server):  # type: ig
         """
         Handle controlAndReadSensors.
 
-        Currently reads nothing.
-
         :param args: Args to the function.
         :returns: The readings.
         """
@@ -253,6 +260,7 @@ class RoboServerImpl(robot_daemon_protocol_capnp.RoboServer.Server):  # type: ig
             imu_orientation = self._physical_interface.get_imu_orientation()
             imu_specific_force = self._physical_interface.get_imu_specific_force()
             imu_angular_rate = self._physical_interface.get_imu_angular_rate()
+            camera_view = self._physical_interface.get_camera_view()
 
         return robot_daemon_protocol_capnp.SensorReadings(
             pins=pins_readings,
@@ -260,10 +268,33 @@ class RoboServerImpl(robot_daemon_protocol_capnp.RoboServer.Server):  # type: ig
             imuOrientation=self._vector3_to_capnp(imu_orientation),
             imuSpecificForce=self._vector3_to_capnp(imu_specific_force),
             imuAngularRate=self._vector3_to_capnp(imu_angular_rate),
+            cameraView=self._camera_view_to_capnp(camera_view),
         )
 
     @staticmethod
-    def _vector3_to_capnp(vector: Vector3) -> Vector3:
+    def _vector3_to_capnp(vector: Vector3) -> capnpVector3:
+        """
+        Convert a pyrr Vector3 object into a capnp compatible Vector3.
+
+        :param vector: The pyrr Vector3.
+        :return: The capnp Vector3.
+        """
         return robot_daemon_protocol_capnp.Vector3(
             x=float(vector.x), y=float(vector.y), z=float(vector.z)
+        )
+
+    @staticmethod
+    def _camera_view_to_capnp(image: NDArray[np.uint8]) -> capnpImage:
+        """
+        Convert an image as an NDArray into an capnp compatible Image.
+
+        Not that we flatten the channels so they have to be reconstructed later on.
+
+        :param image: The NDArray image.
+        :return: The capnp Image object.
+        """
+        return robot_daemon_protocol_capnp.Image(
+            r=image[0].flatten().tolist(),
+            g=image[1].flatten().tolist(),
+            b=image[2].flatten().tolist(),
         )

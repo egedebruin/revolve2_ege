@@ -1,6 +1,9 @@
 import math
 from typing import Sequence
 
+import cv2
+import numpy as np
+from numpy.typing import NDArray
 from pyrr import Vector3
 from robohatlib.hal.assemblyboard.PwmPlug import PwmPlug
 from robohatlib.hal.assemblyboard.servo.ServoData import ServoData
@@ -173,3 +176,22 @@ class V2PhysicalInterface(PhysicalInterface):
         if accel is None:
             raise RuntimeError("Could not get IMU acceleration reading!")
         return Vector3(accel)
+
+    def get_camera_view(self) -> NDArray[np.uint8]:
+        """
+        Get the current view from the camera.
+
+        :returns: A dummy image until robohatlib has camera support.
+        """
+        image = np.zeros((3, 100, 100), dtype=int)
+        cv2.putText(
+            image,
+            "Dummy Image",
+            (10, 10),
+            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            fontScale=1,
+            color=(255, 0, 0),
+            thickness=1,
+            lineType=2,
+        )
+        return image

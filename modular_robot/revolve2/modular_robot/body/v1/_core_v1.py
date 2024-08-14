@@ -5,7 +5,7 @@ from ..base import Core
 
 
 class CoreV1(Core):
-    """The core module of a modular robot."""
+    """The core module of a v1 modular robot."""
 
     def __init__(self, rotation: float | RightAngles):
         """
@@ -18,4 +18,5 @@ class CoreV1(Core):
             bounding_box=Vector3([0.089, 0.089, 0.089]),
             mass=0.250,
             child_offset=0.089 / 2.0,
+            sensors=[],
         )

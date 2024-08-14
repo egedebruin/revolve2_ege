@@ -6,7 +6,7 @@ from .._attachment_point import AttachmentPoint
 from .._color import Color
 from .._module import Module
 from .._right_angles import RightAngles
-from ..sensors import IMUSensor
+from ..sensors import Sensor
 
 
 class Core(Module):
@@ -21,12 +21,6 @@ class Core(Module):
 
     _bounding_box: Vector3
     _mass: float
-    """
-    This is the last assigned id to a module.
-    See `_get_new_module_id` on what this is used for.
-    """
-
-    imu_sensor: IMUSensor | None
 
     def __init__(
         self,
@@ -34,6 +28,7 @@ class Core(Module):
         mass: float,
         bounding_box: Vector3,
         child_offset: float,
+        sensors: list[Sensor],
     ):
         """
         Initialize this object.
@@ -42,6 +37,7 @@ class Core(Module):
         :param mass: The Modules mass (in kg).
         :param bounding_box: The bounding box. Vector3 with sizes of bbox in x,y,z dimension (m). Sizes are total length, not half length from origin.
         :param child_offset: The offset for the children.
+        :param sensors: The sensors of the module.
         """
         self._mass = mass
         self._bounding_box = bounding_box
@@ -79,9 +75,17 @@ class Core(Module):
             ),
         }
 
-        super().__init__(rotation, Color(255, 50, 50, 255), attachment_points)
-        self._parent = None
-        self._parent_child_index = None
+        """
+        The base module only has orientation as its parameter since not all modules are square.
+
+        Here we covert the angle of the module to its orientation in space.
+        """
+        orientation = Quaternion.from_eulers(
+            [rotation if isinstance(rotation, float) else rotation.value, 0, 0]
+        )
+        super().__init__(
+            orientation, Color(255, 50, 50, 255), attachment_points, sensors
+        )
 
     @property
     def mass(self) -> float:

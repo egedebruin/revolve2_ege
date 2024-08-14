@@ -4,16 +4,17 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "revolve2-simulation"
-version = "1.0.2"
+version = "1.2.1"
 description = "Revolve2: Physics simulation abstraction layer."
 readme = "../README.md"
 authors = [
     "Aart Stuurman <aartstuurman@hotmail.com>",
     "Oliver Weissl <o.weissl@vu.nl>",
+    "Kevin Godin-Dubois <k.j.m.godin-dubois@vu.nl>",
 ]
 repository = "https://github.com/ci-group/revolve2"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Typing :: Typed",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",

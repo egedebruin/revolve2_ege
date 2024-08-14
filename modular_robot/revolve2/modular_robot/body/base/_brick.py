@@ -6,10 +6,11 @@ from .._attachment_point import AttachmentPoint
 from .._color import Color
 from .._module import Module
 from .._right_angles import RightAngles
+from ..sensors import Sensor
 
 
 class Brick(Module):
-    """A Brick."""
+    """A Brick Module."""
 
     FRONT = 0
     RIGHT = 1
@@ -26,14 +27,16 @@ class Brick(Module):
         mass: float,
         bounding_box: Vector3,
         child_offset: float,
+        sensors: list[Sensor],
     ):
         """
         Initialize this object.
 
         :param rotation: The Modules rotation.
         :param mass: The Modules mass (in kg).
-        :param bounding_box: The bounding box. Vector3 with sizes of bbox in x,y,z dimension (m). Sizes are total length, not half length from origin.
+        :param bounding_box: The bounding box. Vector3 with sizes of bbox in x,y,z dimension (m). Sizes are total length, not half-length from origin.
         :param child_offset: The offset of the child for each attachment point.
+        :param sensors: The sensors associated with this module.
         """
         attachment_points = {
             self.FRONT: AttachmentPoint(
@@ -64,7 +67,18 @@ class Brick(Module):
         }
         self._mass = mass
         self._bounding_box = bounding_box
-        super().__init__(rotation, Color(50, 50, 255, 255), attachment_points)
+
+        """
+        The base module only has orientation as its parameter since not all modules are square.
+
+        Here we covert the angle of the module to its orientation in space.
+        """
+        orientation = Quaternion.from_eulers(
+            [rotation if isinstance(rotation, float) else rotation.value, 0, 0]
+        )
+        super().__init__(
+            orientation, Color(50, 50, 255, 255), attachment_points, sensors
+        )
 
     @property
     def front(self) -> Module | None:
@@ -170,7 +184,7 @@ class Brick(Module):
         """
         Get the bounding box size.
 
-        Sizes are total length, not half length from origin.
+        Sizes are total length, not half-length from origin.
         :return: Vector3 with sizes of bbox in x,y,z dimension (in m).
         """
         return self._bounding_box
