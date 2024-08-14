@@ -8,7 +8,7 @@ from sqlalchemy.engine import Connection
 
 import uuid
 
-from sine_brain import SineBrain
+from sine_brain_simple import SineBrain
 import config
 from revolve2.modular_robot.body.base import ActiveHinge
 from revolve2.modular_robot.body.v1 import BodyV1
@@ -40,13 +40,13 @@ class BrainGenotype(orm.MappedAsDataclass):
             new_uuid = uuid.uuid4()
             if config.CONTROLLERS != -1:
                 new_uuid = uuid.UUID(int=i)
-            brain[new_uuid] = np.array(rng.random(4))
+            brain[new_uuid] = np.array(rng.random(2))
 
         return BrainGenotype(brain=brain)
 
     def add_new(self, rng):
         new_uuid = uuid.uuid4()
-        self.brain[new_uuid] = np.array(rng.random(4))
+        self.brain[new_uuid] = np.array(rng.random(2))
         return new_uuid
 
     def remove_unused(self, used_uuids, rng):
@@ -57,7 +57,7 @@ class BrainGenotype(orm.MappedAsDataclass):
 
         if len(self.brain.keys()) == 0:
             new_uuid = uuid.uuid4()
-            self.brain = {new_uuid: np.array(rng.random(4))}
+            self.brain = {new_uuid: np.array(rng.random(2))}
 
     def mutate_brain(self, rng: np.random.Generator):
         brain = BrainGenotype(brain=self.brain.copy())
@@ -87,21 +87,14 @@ class BrainGenotype(orm.MappedAsDataclass):
 
         amplitudes = []
         phases = []
-        touch_weights = []
-        sensor_phase_offset = []
         for active_hinge in active_hinges:
             amplitudes.append(self.brain[active_hinge.map_uuid][0])
             phases.append(self.brain[active_hinge.map_uuid][1] * 2 * math.pi)
-            touch_weights.append((self.brain[active_hinge.map_uuid][2] * config.MAX_ATTRACTION_COEFFICIENT -
-                                  config.MAX_ATTRACTION_COEFFICIENT))
-            sensor_phase_offset.append(self.brain[active_hinge.map_uuid][3] * 2 * math.pi)
 
         brain = SineBrain(
             active_hinges=active_hinges,
             amplitudes=amplitudes,
-            phases=phases,
-            touch_weights=touch_weights,
-            sensor_phase_offset=sensor_phase_offset
+            phases=phases
         )
 
         return brain

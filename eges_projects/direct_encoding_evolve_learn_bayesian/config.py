@@ -1,6 +1,6 @@
 """Configuration parameters for this example."""
-DATABASE_FILE = "test.sqlite"
-ENVIRONMENT = 'steps'
+DATABASE_FILE = "results/1208/learn-30_evosearch-1_controllers-adaptable_select-tournament_environment-noisy_5.sqlite"
+ENVIRONMENT = 'noisy'
 NUM_REPETITIONS = 1
 NUM_SIMULATORS = 1
 NUM_PARALLEL_PROCESSES = 50

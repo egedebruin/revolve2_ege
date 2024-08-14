@@ -54,8 +54,8 @@ def get_df(learn, evosearch, controllers, environment, survivor_select):
         df_mini = df_mini[df_mini['experiment_id'] == 1]
         df_mini['experiment_id'] = i
 
-        df_mini['morphologies'] = df_mini['generation_index'] * 10 + 50
-        df_mini['function_evaluations'] = df_mini['generation_index'] * int(learn) * 10 + int(learn) * 50
+        df_mini['morphologies'] = df_mini['generation_index'] * 50 + 50
+        df_mini['function_evaluations'] = df_mini['generation_index'] * int(learn) * 50 + int(learn) * 50
         mapping_dict = dict(zip(df_mini['genotype_id'], df_mini['fitness']))
         df_mini['parents_fitness'] = (df_mini['parent_1_genotype_id'].map(mapping_dict) + df_mini['parent_2_genotype_id'].map(mapping_dict)) / 2
         dfs.append(df_mini)

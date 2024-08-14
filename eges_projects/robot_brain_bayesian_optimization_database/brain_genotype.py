@@ -8,8 +8,7 @@ from sqlalchemy.engine import Connection
 
 import uuid
 
-from sine_brain_simple import SineBrain
-import config
+from sine_brain import SineBrain
 from revolve2.modular_robot.body.base import ActiveHinge
 from revolve2.modular_robot.body.v1 import BodyV1
 
@@ -29,72 +28,25 @@ class BrainGenotype(orm.MappedAsDataclass):
     def __init__(self, brain: dict[uuid.UUID, npt.NDArray[np.float_]]):
         self.brain = brain
 
-    @classmethod
-    def initialize_brain(cls, rng) -> 'BrainGenotype':
-        number_of_brains = config.CONTROLLERS
-        if config.CONTROLLERS == -1:
-            number_of_brains = 1
-
-        brain = {}
-        for i in range(number_of_brains):
-            new_uuid = uuid.uuid4()
-            if config.CONTROLLERS != -1:
-                new_uuid = uuid.UUID(int=i)
-            brain[new_uuid] = np.array(rng.random(4))
-
-        return BrainGenotype(brain=brain)
-
-    def add_new(self, rng):
-        new_uuid = uuid.uuid4()
-        self.brain[new_uuid] = np.array(rng.random(4))
-        return new_uuid
-
-    def remove_unused(self, used_uuids, rng):
-        difference = [item for item in list(self.brain.keys()) if item not in list(used_uuids)]
-
-        for remove_item in difference:
-            self.brain.pop(remove_item)
-
-        if len(self.brain.keys()) == 0:
-            new_uuid = uuid.uuid4()
-            self.brain = {new_uuid: np.array(rng.random(4))}
-
-    def mutate_brain(self, rng: np.random.Generator):
-        brain = BrainGenotype(brain=self.brain.copy())
-
-        for key, value in brain.brain.items():
-            noise = rng.normal(loc=0, scale=config.MUTATION_STD, size=len(value))
-            noisy_values = [v + n for v, n in zip(value, noise)]
-            brain.brain[key] = np.clip(noisy_values, 0, 1)
-
-        return brain
-
-    @classmethod
-    def crossover_brain(cls, parent1, parent2, rng):
-        child1_brain, child2_brain = BrainGenotype.initialize_brain(rng), BrainGenotype.initialize_brain(rng)
-
-        for i in range(config.CONTROLLERS):
-            if rng.random() > 0.5:
-                child1_brain.brain[uuid.UUID(int=i)] = parent1.brain[uuid.UUID(int=i)]
-                child2_brain.brain[uuid.UUID(int=i)] = parent2.brain[uuid.UUID(int=i)]
-            else:
-                child1_brain.brain[uuid.UUID(int=i)] = parent2.brain[uuid.UUID(int=i)]
-                child2_brain.brain[uuid.UUID(int=i)] = parent1.brain[uuid.UUID(int=i)]
-        return child1_brain, child2_brain
-
     def develop_brain(self, body: BodyV1):
         active_hinges = body.find_modules_of_type(ActiveHinge)
 
         amplitudes = []
         phases = []
+        touch_weights = []
+        sensor_phase_offset = []
         for active_hinge in active_hinges:
             amplitudes.append(self.brain[active_hinge.map_uuid][0])
             phases.append(self.brain[active_hinge.map_uuid][1] * 2 * math.pi)
+            touch_weights.append(self.brain[active_hinge.map_uuid][2] - 1)
+            sensor_phase_offset.append(self.brain[active_hinge.map_uuid][3] * 2 * math.pi)
 
         brain = SineBrain(
             active_hinges=active_hinges,
             amplitudes=amplitudes,
-            phases=phases
+            phases=phases,
+            touch_weights=touch_weights,
+            sensor_phase_offset=sensor_phase_offset
         )
 
         return brain
