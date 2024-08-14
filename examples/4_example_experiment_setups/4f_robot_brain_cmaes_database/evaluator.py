@@ -1,12 +1,9 @@
 """Evaluator class."""
 
 import math
-import config
 
 import numpy as np
 import numpy.typing as npt
-
-from sine_brain import SineBrain
 
 from revolve2.ci_group import fitness_functions, terrains
 from revolve2.ci_group.simulation_parameters import make_standard_batch_parameters
@@ -29,7 +26,6 @@ class Evaluator:
     _cpg_network_structure: CpgNetworkStructure
     _body: Body
     _output_mapping: list[tuple[int, ActiveHinge]]
-    _active_hinges: list[ActiveHinge]
 
     def __init__(
         self,
@@ -38,7 +34,6 @@ class Evaluator:
         cpg_network_structure: CpgNetworkStructure,
         body: Body,
         output_mapping: list[tuple[int, ActiveHinge]],
-        active_hinges: list[ActiveHinge]
     ) -> None:
         """
         Initialize this object.
@@ -52,12 +47,10 @@ class Evaluator:
         self._simulator = LocalSimulator(
             headless=headless, num_simulators=num_simulators
         )
-        # self._terrain = terrains.flat()
-        self._terrain = terrains.hills(height=0.3)
+        self._terrain = terrains.flat()
         self._cpg_network_structure = cpg_network_structure
         self._body = body
         self._output_mapping = output_mapping
-        self._active_hinges = active_hinges
 
     def evaluate(
         self,
@@ -72,22 +65,18 @@ class Evaluator:
         :returns: Fitnesses of the solutions.
         """
         # Create robots from the brain parameters.
-        robots = []
-        for params in solutions:
-            amplitudes = params[:len(self._active_hinges)]
-            phases = params[len(self._active_hinges):len(self._active_hinges) * 2] * 2 * math.pi
-            touch_weights = (params[len(self._active_hinges) * 2:len(
-                self._active_hinges) * 3] * config.FREQUENCY - config.FREQUENCY)
-            neighbour_touch_weights = (params[len(self._active_hinges) * 3:len(
-                self._active_hinges) * 4] * config.FREQUENCY - config.FREQUENCY)
-            sensor_phase_offset = params[len(self._active_hinges) * 4:] * 2 * math.pi
-            brain = SineBrain(active_hinges=self._active_hinges,
-                              amplitudes=amplitudes,
-                              phases=phases,
-                              touch_weights=touch_weights,
-                              neighbour_touch_weights=neighbour_touch_weights,
-                              sensor_phase_offset=sensor_phase_offset)
-            robots.append(ModularRobot(body=self._body, brain=brain))
+        robots = [
+            ModularRobot(
+                body=self._body,
+                brain=BrainCpgNetworkStatic.uniform_from_params(
+                    params=params,
+                    cpg_network_structure=self._cpg_network_structure,
+                    initial_state_uniform=math.sqrt(2) * 0.5,
+                    output_mapping=self._output_mapping,
+                ),
+            )
+            for params in solutions
+        ]
 
         # Create the scenes.
         scenes = []
@@ -105,7 +94,7 @@ class Evaluator:
 
         # Calculate the xy displacements.
         xy_displacements = [
-            fitness_functions.forward_displacement(
+            fitness_functions.xy_displacement(
                 states[0].get_modular_robot_simulation_state(robot),
                 states[-1].get_modular_robot_simulation_state(robot),
             )

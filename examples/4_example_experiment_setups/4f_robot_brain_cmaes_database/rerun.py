@@ -56,7 +56,6 @@ def main() -> None:
         cpg_network_structure=cpg_network_structure,
         body=config.BODY,
         output_mapping=output_mapping,
-        active_hinges=active_hinges
     )
 
     # Show the robot.
