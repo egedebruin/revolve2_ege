@@ -4,26 +4,25 @@ import logging
 import time
 from argparse import ArgumentParser
 
-from bayes_opt import BayesianOptimization, UtilityFunction
-from sklearn.gaussian_process.kernels import Matern
-
-import config
 import numpy as np
 import numpy.typing as npt
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.base import Base
-from evaluator import Evaluator
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.experiment import Experiment
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.generation import Generation
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.genotype import Genotype
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.individual import Individual
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.population import Population
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.learn_genotype import LearnGenotype
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.learn_individual import LearnIndividual
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.learn_population import LearnPopulation
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.learn_generation import LearnGeneration
+from bayes_opt import BayesianOptimization, UtilityFunction
+from sklearn.gaussian_process.kernels import Matern
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
+import config
+from database_components.base import Base
+from database_components.experiment import Experiment
+from database_components.generation import Generation
+from database_components.genotype import Genotype
+from database_components.individual import Individual
+from database_components.learn_generation import LearnGeneration
+from database_components.learn_genotype import LearnGenotype
+from database_components.learn_individual import LearnIndividual
+from database_components.learn_population import LearnPopulation
+from database_components.population import Population
+from evaluator import Evaluator
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
 from revolve2.experimentation.optimization.ea import population_management, selection

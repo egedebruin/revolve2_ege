@@ -2,12 +2,10 @@
 
 import logging
 
-from matplotlib import pyplot as plt
-
 import config
 from evaluator import Evaluator
-from genotype import Genotype
-from individual import Individual
+from eges_projects.robot_brain_cmaes_database.database_components.genotype import Genotype
+from eges_projects.robot_brain_cmaes_database.database_components.individual import Individual
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

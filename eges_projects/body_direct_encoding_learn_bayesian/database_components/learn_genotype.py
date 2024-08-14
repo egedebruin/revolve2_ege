@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
-from base import Base
-from brain_genotype import BrainGenotype
+from database_components.base import Base
+from brain_genotype_simple import BrainGenotype
 from body_genotype_direct import BodyGenotypeDirect
 
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot
 
+import sqlalchemy.orm as orm
 
-class Genotype(Base, HasId, BrainGenotype, BodyGenotypeDirect):
+
+class LearnGenotype(Base, HasId, BrainGenotype, BodyGenotypeDirect):
     """A genotype that is an array of parameters."""
 
-    __tablename__ = "genotype"
+    __tablename__ = "learn_genotype"
+    execution_time: orm.Mapped[float] = orm.mapped_column(default=0.0)
 
     def develop(self) -> ModularRobot:
         """

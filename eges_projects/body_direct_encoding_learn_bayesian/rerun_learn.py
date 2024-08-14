@@ -5,8 +5,8 @@ from evaluator import Evaluator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.learn_genotype import LearnGenotype
-from eges_projects.direct_encoding_evolve_learn_bayesian.database_components.learn_individual import LearnIndividual
+from database_components.learn_genotype import LearnGenotype
+from database_components.learn_individual import LearnIndividual
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
 

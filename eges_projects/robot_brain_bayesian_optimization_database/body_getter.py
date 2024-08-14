@@ -1,11 +1,9 @@
-import os
-
 import config
 
 from revolve2.experimentation.database import open_database_sqlite, OpenMethod
 
-from learn_genotype import LearnGenotype
-from learn_individual import LearnIndividual
+from eges_projects.robot_brain_bayesian_optimization_database.database_components.learn_genotype import LearnGenotype
+from eges_projects.robot_brain_bayesian_optimization_database.database_components.learn_individual import LearnIndividual
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session

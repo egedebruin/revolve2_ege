@@ -3,8 +3,8 @@
 from revolve2.ci_group.modular_robots_v1 import gecko_v1
 from revolve2.ci_group.modular_robots_v1 import snake_v1
 
-DATABASE_FILE = "with_touch1.sqlite"
-DATABASE_FILE_OLD = "test4.sqlite"
+DATABASE_FILE = "results/with_touch1.sqlite"
+DATABASE_FILE_OLD = "results/test4.sqlite"
 NUM_REPETITIONS = 1
 NUM_SIMULATORS = 1
 NUM_PARALLEL_PROCESSES = 1

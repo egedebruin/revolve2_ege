@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import sqlalchemy.orm as orm
-
 import uuid
 
 import numpy as np
-from base import Base
+import sqlalchemy.orm as orm
+from database_components.base import Base
+
 import config
 from body_genotype_direct import BodyGenotypeDirect
 from brain_genotype import BrainGenotype
-
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot
 

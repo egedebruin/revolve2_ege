@@ -9,18 +9,17 @@ from bayes_opt import UtilityFunction
 from sklearn.gaussian_process.kernels import Matern
 
 import config
-from base import Base
+from eges_projects.robot_brain_bayesian_optimization_database.database_components.base import Base
 from evaluator import Evaluator
-from experiment import Experiment
-from generation import Generation
-from population import Population
+from eges_projects.robot_brain_bayesian_optimization_database.database_components.experiment import Experiment
+from eges_projects.robot_brain_bayesian_optimization_database.database_components.generation import Generation
+from eges_projects.robot_brain_bayesian_optimization_database.database_components.population import Population
 from sqlalchemy.orm import Session
 import body_getter
-from genotype import Genotype
-from individual import Individual
+from eges_projects.robot_brain_bayesian_optimization_database.database_components.genotype import Genotype
+from eges_projects.robot_brain_bayesian_optimization_database.database_components.individual import Individual
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
-from revolve2.experimentation.logging import setup_logging
 from revolve2.experimentation.rng import seed_from_time, make_rng
 
 

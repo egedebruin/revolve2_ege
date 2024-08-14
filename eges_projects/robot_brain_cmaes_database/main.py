@@ -4,13 +4,13 @@ import logging
 
 import cma
 import config
-from base import Base
+from eges_projects.robot_brain_cmaes_database.database_components.base import Base
 from evaluator import Evaluator
-from experiment import Experiment
-from generation import Generation
-from genotype import Genotype
-from individual import Individual
-from population import Population
+from eges_projects.robot_brain_cmaes_database.database_components.experiment import Experiment
+from eges_projects.robot_brain_cmaes_database.database_components.generation import Generation
+from eges_projects.robot_brain_cmaes_database.database_components.genotype import Genotype
+from eges_projects.robot_brain_cmaes_database.database_components.individual import Individual
+from eges_projects.robot_brain_cmaes_database.database_components.population import Population
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 

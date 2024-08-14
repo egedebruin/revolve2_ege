@@ -2,21 +2,18 @@
 
 from __future__ import annotations
 
-from base import Base
-from brain_genotype_simple import BrainGenotype
+from eges_projects.robot_brain_bayesian_optimization_database.database_components.base import Base
+from brain_genotype import BrainGenotype
 from body_genotype_direct import BodyGenotypeDirect
 
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot
 
-import sqlalchemy.orm as orm
 
-
-class LearnGenotype(Base, HasId, BrainGenotype, BodyGenotypeDirect):
+class Genotype(Base, HasId, BrainGenotype, BodyGenotypeDirect):
     """A genotype that is an array of parameters."""
 
-    __tablename__ = "learn_genotype"
-    execution_time: orm.Mapped[float] = orm.mapped_column(default=0.0)
+    __tablename__ = "genotype"
 
     def develop(self) -> ModularRobot:
         """

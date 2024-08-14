@@ -9,17 +9,17 @@ from sklearn.gaussian_process.kernels import Matern
 import config
 import numpy as np
 import numpy.typing as npt
-from base import Base
+from eges_projects.generative_encoding.database_components.base import Base
 from evaluator import Evaluator
-from experiment import Experiment
-from generation import Generation
-from genotype import Genotype
-from individual import Individual
-from population import Population
-from learn_genotype import LearnGenotype
-from learn_individual import LearnIndividual
-from learn_population import LearnPopulation
-from learn_generation import LearnGeneration
+from eges_projects.generative_encoding.database_components.experiment import Experiment
+from eges_projects.generative_encoding.database_components.generation import Generation
+from eges_projects.generative_encoding.database_components.genotype import Genotype
+from eges_projects.generative_encoding.database_components.individual import Individual
+from eges_projects.generative_encoding.database_components.population import Population
+from eges_projects.generative_encoding.database_components.learn_genotype import LearnGenotype
+from eges_projects.generative_encoding.database_components.learn_individual import LearnIndividual
+from eges_projects.generative_encoding.database_components.learn_population import LearnPopulation
+from eges_projects.generative_encoding.database_components.learn_generation import LearnGeneration
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 

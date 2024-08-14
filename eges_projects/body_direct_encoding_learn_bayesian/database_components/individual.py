@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from sqlalchemy import orm
 
-from base import Base
-from genotype import Genotype
+from .base import Base
+from .genotype import Genotype
 
 from revolve2.experimentation.optimization.ea import Individual as GenericIndividual
 

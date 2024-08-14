@@ -3,10 +3,10 @@
 import config
 import matplotlib.pyplot as plt
 import pandas
-from experiment import Experiment
-from generation import Generation
-from individual import Individual
-from population import Population
+from eges_projects.robot_brain_cmaes_database.database_components.experiment import Experiment
+from eges_projects.robot_brain_cmaes_database.database_components.generation import Generation
+from eges_projects.robot_brain_cmaes_database.database_components.individual import Individual
+from eges_projects.robot_brain_cmaes_database.database_components.population import Population
 from sqlalchemy import select
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
