@@ -54,7 +54,7 @@ def get_dfs_normal(database_name, generation_index):
 
 
 def get_dfs_short_learn(database_name, generation_index):
-    files = [file for file in os.listdir("../results") if file.startswith(database_name)]
+    files = [file for file in os.listdir("results") if file.startswith(database_name)]
     dfs = []
     i = 0
     for file_name in files:

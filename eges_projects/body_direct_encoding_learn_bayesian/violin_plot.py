@@ -155,7 +155,7 @@ def main() -> None:
     # df['environment'] = df['environment'].astype('category')
     # df.to_csv('results/robot-info.csv', sep="\t")
 
-    df = pandas.read_csv('../results/robot-info.csv', sep="\t", index_col=0)
+    df = pandas.read_csv('results/robot-info.csv', sep="\t", index_col=0)
     df['learn'] = df['learn'].astype('category')
     df['expected_controllers'] = df['expected_controllers'].astype('category')
     df['environment'] = df['environment'].astype('category')

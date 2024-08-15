@@ -6,7 +6,7 @@ import uuid
 
 import numpy as np
 import sqlalchemy.orm as orm
-from database_components.base import Base
+from .base import Base
 
 import config
 from body_genotype_direct import BodyGenotypeDirect

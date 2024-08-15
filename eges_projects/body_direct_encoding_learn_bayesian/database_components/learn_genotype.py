@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from database_components.base import Base
+from .base import Base
 from brain_genotype_simple import BrainGenotype
 from body_genotype_direct import BodyGenotypeDirect
 

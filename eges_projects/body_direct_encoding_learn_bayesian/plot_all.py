@@ -3,10 +3,10 @@
 import matplotlib.pyplot as plt
 import pandas
 import os
-from experiment import Experiment
-from generation import Generation
-from individual import Individual
-from population import Population
+from database_components.experiment import Experiment
+from database_components.generation import Generation
+from database_components.individual import Individual
+from database_components.population import Population
 from sqlalchemy import select
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
@@ -15,7 +15,7 @@ from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 def get_df(learn, evosearch, controllers, environment, survivor_select):
     database_name = f"learn-{learn}_evosearch-{evosearch}_controllers-{controllers}_select-{survivor_select}_environment-{environment}"
     print(database_name)
-    files = [file for file in os.listdir("../results/1208") if file.startswith(database_name)]
+    files = [file for file in os.listdir("results/1208") if file.startswith(database_name)]
     if len(files) == 0:
         return None
     dfs = []
@@ -117,7 +117,7 @@ def main() -> None:
     fig, ax = plt.subplots(nrows=4, ncols=2, sharex='col', sharey='row')
     for i, x_axis in enumerate(["morphologies", "function_evaluations"]):
         for (learn, evosearch) in [('1', '1'), ('30', '1')]:
-            for j, environment in enumerate(['flat', 'noisy']):
+            for j, environment in enumerate(['flat', 'noisy', 'steps']):
                 plot_database(ax[j][i], x_axis, learn, environment, 'adaptable', evosearch, "tournament")
                 if j == 3:
                     ax[j][i].set_xlabel(x_axis.replace("_", " ").title())
