@@ -10,6 +10,6 @@ class MapType(Enum):
     - "SKYBOX": Like "cube" but maps onto the inside of an object.
     """
 
-    MAP2D = auto()
-    CUBE = auto()
-    SKYBOX = auto()
+    MAP2D = '2d'
+    CUBE = 'cube'
+    SKYBOX = 'skybox'

@@ -45,7 +45,7 @@ def get_df(learn, evosearch, controllers, environment, survivor_select):
 
 
 def plot_database(ax_thingy, x_axis, learn, environment, controllers, evosearch, survivor_select):
-    max_or_mean = 'max'
+    max_or_mean = 'mean'
     df = get_df(learn, evosearch, controllers, environment, survivor_select)
 
     if df is None:

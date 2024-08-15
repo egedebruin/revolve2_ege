@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 from revolve2.experimentation.database import open_database_sqlite, OpenMethod
 from sqlalchemy import select
 
-from experiment import Experiment
-from generation import Generation
-from genotype import Genotype
-from individual import Individual
-from population import Population
-from learn_generation import LearnGeneration
-from learn_population import LearnPopulation
-from learn_individual import LearnIndividual
+from database_components.experiment import Experiment
+from database_components.generation import Generation
+from database_components.genotype import Genotype
+from database_components.individual import Individual
+from database_components.population import Population
+from database_components.learn_generation import LearnGeneration
+from database_components.learn_population import LearnPopulation
+from database_components.learn_individual import LearnIndividual
 
 
 def get_df(learn, evosearch, controllers, environment, survivor_select):
@@ -50,8 +50,8 @@ def get_df(learn, evosearch, controllers, environment, survivor_select):
 
 
 def main() -> None:
-    fig, ax = plt.subplots(nrows=4, ncols=2, sharex='col', sharey='row')
-    for i, environment in enumerate(['flat']):
+    fig, ax = plt.subplots(nrows=3, ncols=3, sharex='col', sharey='row')
+    for i, environment in enumerate(['flat', 'noisy', 'steps']):
         for j, (learn, evosearch) in enumerate([('30', '1')]):
             df = get_df(learn, evosearch, 'adaptable', environment, 'tournament')
             grouped = df.groupby(['experiment_id', 'genotype_id'])

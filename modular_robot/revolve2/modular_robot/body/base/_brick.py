@@ -42,27 +42,22 @@ class Brick(Module):
             self.FRONT: AttachmentPoint(
                 offset=Vector3([child_offset, 0.0, 0.0]),
                 orientation=Quaternion.from_eulers([0.0, 0.0, 0.0]),
-                rotate=False
             ),
             self.LEFT: AttachmentPoint(
                 offset=Vector3([child_offset, 0.0, 0.0]),
                 orientation=Quaternion.from_eulers([0.0, 0.0, math.pi / 2.0]),
-                rotate=False
             ),
             self.RIGHT: AttachmentPoint(
                 offset=Vector3([child_offset, 0.0, 0.0]),
                 orientation=Quaternion.from_eulers([0.0, 0.0, math.pi / 2.0 * 3]),
-                rotate=False
             ),
             self.UP: AttachmentPoint(
                 offset=Vector3([child_offset, 0.0, 0.0]),
                 orientation=Quaternion.from_eulers([0.0, math.pi / 2.0 * 3, 0.0]),
-                rotate=True
             ),
             self.DOWN: AttachmentPoint(
                 offset=Vector3([child_offset, 0.0, 0.0]),
                 orientation=Quaternion.from_eulers([0.0, math.pi / 2.0, 0.0]),
-                rotate=True
             ),
         }
         self._mass = mass

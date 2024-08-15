@@ -16,5 +16,3 @@ class AttachmentPoint:
     """The orientation of the attachment point on the module."""
     offset: Vector3
     """The offset for the attachment point, with respect to the center of the module."""
-    rotate: bool
-    """Some angle I just hope it works"""
