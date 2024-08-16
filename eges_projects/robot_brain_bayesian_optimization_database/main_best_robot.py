@@ -9,7 +9,6 @@ import numpy as np
 from bayes_opt import BayesianOptimization
 from bayes_opt import UtilityFunction
 from sklearn.gaussian_process.kernels import Matern
-from tensorflow.python.keras.backend import learning_phase
 
 import config
 from database_components.base import Base
