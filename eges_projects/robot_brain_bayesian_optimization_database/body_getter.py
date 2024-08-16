@@ -9,9 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 
-def get_best_genotype():
+def get_best_genotype(file_name):
     dbengine = open_database_sqlite(
-        config.DATABASE_FILE_OLD, open_method=OpenMethod.OPEN_IF_EXISTS
+        file_name, open_method=OpenMethod.OPEN_IF_EXISTS
     )
     with Session(dbengine) as ses:
         row = ses.execute(

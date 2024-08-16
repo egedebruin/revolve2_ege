@@ -2,6 +2,8 @@
 
 import logging
 import concurrent.futures
+import os
+from argparse import ArgumentParser
 
 import numpy as np
 from bayes_opt import BayesianOptimization
@@ -51,13 +53,13 @@ def latin_hypercube(n, k, rng: np.random.Generator):
     return samples
 
 
-def run_experiment(i):
+def run_experiment(i, old_file, environment):
     logging.info("----------------")
     logging.info("Start experiment")
 
     # Open the database, only if it does not already exists.
     dbengine = open_database_sqlite(
-        config.DATABASE_FILE + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
+        'results/after_learn/' + old_file.replace(".sqlite", "") + "_" + environment + "_" + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
     )
     # Create the structure of the database.
     Base.metadata.create_all(dbengine)
@@ -77,9 +79,10 @@ def run_experiment(i):
     evaluator = Evaluator(
         headless=True,
         num_simulators=config.NUM_SIMULATORS,
+        environment=environment
     )
 
-    genotype = body_getter.get_best_genotype()
+    genotype = body_getter.get_best_genotype('results/to_learn/' + old_file)
     pbounds = {}
 
     for uuid in genotype.brain.keys():
@@ -170,16 +173,30 @@ def run_experiment(i):
     return True
 
 
+def read_args():
+    # Read args
+    parser = ArgumentParser()
+    parser.add_argument("--learn", required=True)
+    parser.add_argument("--environment", required=True)
+    args = parser.parse_args()
+
+    return "learn-" + str(args.learn) + "_evosearch-1_controllers-adaptable_select-tournament_environment-" + args.environment
+
+
 def run_experiments():
-    with concurrent.futures.ProcessPoolExecutor(
-            max_workers=config.NUM_PARALLEL_PROCESSES
-    ) as executor:
-        futures = [
-            executor.submit(run_experiment, i)
-            for i in range(config.NUM_PARALLEL_PROCESSES)
-        ]
-        for future in futures:
-            future.result()
+    file_name = read_args()
+    files = [file for file in os.listdir("results/to_learn") if file.startswith(file_name)]
+    for file in files:
+        for environment in ['flat', 'noisy', 'steps', 'hills']:
+            with concurrent.futures.ProcessPoolExecutor(
+                    max_workers=config.NUM_PARALLEL_PROCESSES
+            ) as executor:
+                futures = [
+                    executor.submit(run_experiment, i, file, environment)
+                    for i in range(config.NUM_PARALLEL_PROCESSES)
+                ]
+                for future in futures:
+                    future.result()
 
 
 def main() -> None:

@@ -32,6 +32,7 @@ class Evaluator:
         self,
         headless: bool,
         num_simulators: int,
+        environment = None
     ) -> None:
         """
         Initialize this object.
@@ -46,17 +47,20 @@ class Evaluator:
             headless=headless, num_simulators=num_simulators
         )
 
-        if config.ENVIRONMENT == 'flat':
+        if environment is None:
+            environment = config.ENVIRONMENT
+
+        if environment == 'flat':
             self._terrain = terrains.flat_thin()
-        elif config.ENVIRONMENT == 'hills':
+        elif environment == 'hills':
             self._terrain = terrains.hills(height=0.2)
-        elif config.ENVIRONMENT == 'steps':
+        elif environment == 'steps':
             self._terrain = terrains.steps(height=0.25)
-        elif config.ENVIRONMENT == 'notsonoisy':
+        elif environment == 'notsonoisy':
             self._terrain = terrains.thin_crater((15, 15), 0.1, 0, 0.1)
-        elif config.ENVIRONMENT == 'almostnoisy':
+        elif environment == 'almostnoisy':
             self._terrain = terrains.thin_crater((10, 10), 0.2, 0, 0.1)
-        elif config.ENVIRONMENT == 'noisy':
+        elif environment == 'noisy':
             self._terrain = terrains.thin_crater((10, 10), 0.3, 0, 0.1)
 
     def evaluate(
