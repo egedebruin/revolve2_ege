@@ -9,6 +9,7 @@ import numpy as np
 from bayes_opt import BayesianOptimization
 from bayes_opt import UtilityFunction
 from sklearn.gaussian_process.kernels import Matern
+from tensorflow.python.keras.backend import learning_phase
 
 import config
 from database_components.base import Base
@@ -178,25 +179,25 @@ def read_args():
     parser = ArgumentParser()
     parser.add_argument("--learn", required=True)
     parser.add_argument("--environment", required=True)
+    parser.add_argument("--learn_environment", required=True)
     args = parser.parse_args()
 
-    return "learn-" + str(args.learn) + "_evosearch-1_controllers-adaptable_select-tournament_environment-" + args.environment
+    return "learn-" + str(args.learn) + "_evosearch-1_controllers-adaptable_select-tournament_environment-" + args.environment, args.learn_environment
 
 
 def run_experiments():
-    file_name = read_args()
+    file_name, learn_environment = read_args()
     files = [file for file in os.listdir("results/to_learn") if file.startswith(file_name)]
     for file in files:
-        for environment in ['flat', 'noisy', 'steps', 'hills']:
-            with concurrent.futures.ProcessPoolExecutor(
-                    max_workers=config.NUM_PARALLEL_PROCESSES
-            ) as executor:
-                futures = [
-                    executor.submit(run_experiment, i, file, environment)
-                    for i in range(config.NUM_PARALLEL_PROCESSES)
-                ]
-                for future in futures:
-                    future.result()
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=config.NUM_PARALLEL_PROCESSES
+        ) as executor:
+            futures = [
+                executor.submit(run_experiment, i, file, learn_environment)
+                for i in range(config.NUM_PARALLEL_PROCESSES)
+            ]
+            for future in futures:
+                future.result()
 
 
 def main() -> None:
