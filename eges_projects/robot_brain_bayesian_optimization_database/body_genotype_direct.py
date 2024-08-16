@@ -36,40 +36,24 @@ class ModuleGenotype:
         'back': 'back',
         'attachment': 'attachment'
     }
-    reverse_direction_2 = {
-        'right': 'right',
-        'up': 'down',
-        'front': 'front',
-        'left': 'left',
-        'down': 'up',
-        'back': 'back',
-        'attachment': 'attachment'
-    }
 
     def __init__(self, rotation):
         self.rotation = rotation
         self.children = {}
 
-    def develop(self, body, grid=None, mirror=False, reverse=False):
+    def develop(self, body, grid, mirror):
         if grid is None:
             grid = [Vector3([0, 0, 0])]
         for directions, module in self.children.items():
             if isinstance(directions, str):
                 directions = [directions]
             is_mirror = mirror
-            is_reverse = reverse
             for direction in directions:
                 new_module = module.get_body_module(is_mirror)
                 if mirror:
-                    if reverse:
-                        direction = self.reverse_direction_2[direction]
-                    else:
-                        direction = self.reverse_direction[direction]
+                    direction = self.reverse_direction[direction]
                 setattr(self.body_module, direction, new_module)
-
-                if direction == 'down' or direction == 'up':
-                    is_reverse = not reverse
-                module.develop(body, grid, is_mirror, is_reverse)
+                module.develop(body, grid, is_mirror)
 
                 grid_position = body.grid_position(new_module)
                 if grid_position not in grid:
@@ -172,6 +156,10 @@ class ModuleGenotype:
         for module in self.children.values():
             module.switch_brain(rng, brain)
 
+    def reverse_phase_function(self, value):
+        for module in self.children.values():
+            module.reverse_phase_function(value)
+
     def serialize(self):
         serialized = {'type': self.type, 'rotation': self.rotation, 'children': {}}
 
@@ -216,10 +204,11 @@ class CoreGenotype(ModuleGenotype):
     possible_children = [['left'], ['right'], ['front', 'back']]
     type = 'core'
     rotation = 0.0
+    reverse_phase = False
 
-    def develop(self, body, grid=None, mirror=False, reverse=False):
+    def develop(self, body, grid, mirror):
         self.body_module = body.core_v1
-        super().develop(body, mirror=mirror, reverse=reverse)
+        super().develop(body, grid, mirror)
 
     def get_amount_nodes(self):
         nodes = 0
@@ -228,6 +217,18 @@ class CoreGenotype(ModuleGenotype):
             nodes += module.get_amount_nodes()
 
         return nodes
+
+    def serialize(self):
+        serialized = super().serialize()
+        serialized['reverse_phase'] = int(self.reverse_phase)
+
+        return serialized
+
+    def deserialize(self, serialized):
+        super().deserialize(serialized)
+        self.reverse_phase = serialized['reverse_phase'] > 0
+
+        return self
 
 
 class BrickGenotype(ModuleGenotype):
@@ -243,11 +244,13 @@ class BrickGenotype(ModuleGenotype):
 class HingeGenotype(ModuleGenotype):
     possible_children = [['attachment']]
     brain_index = -1
+    reverse_phase_value = False
     type = 'hinge'
 
-    def develop(self, body, grid=None, mirror=False, reverse=False):
-        super().develop(body, mirror=mirror, reverse=reverse)
+    def develop(self, body, grid, mirror):
+        super().develop(body, grid, mirror)
         self.body_module.map_uuid = self.brain_index
+        self.body_module.reverse_phase = self.reverse_phase_value and mirror
 
     def get_body_module(self, reverse):
         super().get_body_module(reverse)
@@ -266,6 +269,11 @@ class HingeGenotype(ModuleGenotype):
             self.brain_index = rng.choice(list(brain.brain.keys()))
 
         super().switch_brain(rng, brain)
+
+    def reverse_phase_function(self, value):
+        self.reverse_phase_value = value
+
+        super().reverse_phase_function(value)
 
     def serialize(self):
         serialized = super().serialize()
@@ -309,11 +317,12 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
             connection_to_add = rng.integers(1, amount_possible_connections + 1)
             body.add_random_module_to_connection(connection_to_add, rng, brain)
 
-        return BodyGenotypeDirect(body=body)
+        body.reverse_phase = rng.random() > 0.5
+
+        return BodyGenotypeDirect(body)
 
     def mutate_body(self, rng: np.random.Generator, brain: BrainGenotype):
         body = copy.deepcopy(self.body)
-
         mutation_chooser = rng.random()
 
         if mutation_chooser < 0.33:
@@ -323,22 +332,24 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
                 body.add_random_module_to_connection(connection_to_add, rng, brain)
         elif mutation_chooser < 0.66:
             for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
-                amount_nodes = body.get_amount_nodes()
+                amount_nodes = body.get_amount_leaf_nodes()
                 if amount_nodes == 0:
                     break
                 node_to_remove = rng.integers(1, amount_nodes + 1)
-                body.remove_node(node_to_remove)
+                body.remove_leaf_node(node_to_remove)
 
             if config.CONTROLLERS == -1:
                 used_brains = body.check_for_brains()
                 brain.remove_unused(used_brains, rng)
-        elif mutation_chooser < 1:
+        elif mutation_chooser <= 1:
+            body.reverse_phase = not body.reverse_phase
+        else:
             body.switch_brain(rng, brain)
 
             if config.CONTROLLERS == -1:
                 used_brains = body.check_for_brains()
                 brain.remove_unused(used_brains, rng)
-        return BodyGenotypeDirect(body=body), mutation_chooser
+        return BodyGenotypeDirect(body), mutation_chooser
 
     def get_brain_uuids(self):
         return self.body.check_for_brains()
@@ -368,7 +379,8 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
 
     def develop_body(self):
         body = BodyV1()
-        self.body.develop(body)
+        self.body.reverse_phase_function(self.body.reverse_phase and config.REVERSE_PHASE)
+        self.body.develop(body, None, False)
         return body
 
 

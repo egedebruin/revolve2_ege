@@ -33,20 +33,14 @@ class BrainGenotype(orm.MappedAsDataclass):
 
         amplitudes = []
         phases = []
-        touch_weights = []
-        sensor_phase_offset = []
         for active_hinge in active_hinges:
             amplitudes.append(self.brain[active_hinge.map_uuid][0])
             phases.append(self.brain[active_hinge.map_uuid][1] * 2 * math.pi)
-            touch_weights.append(self.brain[active_hinge.map_uuid][2] - 1)
-            sensor_phase_offset.append(self.brain[active_hinge.map_uuid][3] * 2 * math.pi)
 
         brain = SineBrain(
             active_hinges=active_hinges,
             amplitudes=amplitudes,
-            phases=phases,
-            touch_weights=touch_weights,
-            sensor_phase_offset=sensor_phase_offset
+            phases=phases
         )
 
         return brain

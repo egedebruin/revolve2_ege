@@ -3,10 +3,10 @@
 import config
 import matplotlib.pyplot as plt
 import pandas
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.experiment import Experiment
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.generation import Generation
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.individual import Individual
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.population import Population
+from database_components.experiment import Experiment
+from database_components.generation import Generation
+from database_components.individual import Individual
+from database_components.population import Population
 from sqlalchemy import select
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
@@ -18,7 +18,7 @@ def main() -> None:
     setup_logging()
 
     dfs = []
-    for i in range(1, 11):
+    for i in range(1, 2):
         dbengine = open_database_sqlite(
             config.DATABASE_FILE + str(i) + ".sqlite", open_method=OpenMethod.OPEN_IF_EXISTS
         )
@@ -99,7 +99,6 @@ def main() -> None:
     plt.ylabel("Fitness")
     plt.title("Mean and max fitness across repetitions with std as shade")
     plt.legend()
-    plt.ylim([0, 8])
     plt.show()
 
 

@@ -2,8 +2,8 @@
 
 import config
 from evaluator import Evaluator
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.genotype import Genotype
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.individual import Individual
+from database_components.genotype import Genotype
+from database_components.individual import Individual
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

@@ -14,8 +14,6 @@ class SineBrainInstance(BrainInstance):
     t: list[float]
     amplitudes: list[float]
     phases: list[float]
-    touch_weights: list[float]
-    sensor_phase_offset: list[float]
     energy: float
 
     def __init__(
@@ -23,8 +21,6 @@ class SineBrainInstance(BrainInstance):
             active_hinges: list[ActiveHinge],
             amplitudes: list[float],
             phases: list[float],
-            touch_weights: list[float],
-            sensor_phase_offset: list[float]
     ) -> None:
         """
         Initialize the Object.
@@ -34,8 +30,6 @@ class SineBrainInstance(BrainInstance):
         self.active_hinges = active_hinges
         self.amplitudes = amplitudes
         self.phases = phases
-        self.touch_weights = touch_weights
-        self.sensor_phase_offset = sensor_phase_offset
         self.t = [0.0] * len(active_hinges)
         self.energy = config.ENERGY
 
@@ -55,19 +49,12 @@ class SineBrainInstance(BrainInstance):
         if self.energy < 0:
             return
         i = 0
-        target_list = []
-        for active_hinge, amplitude, phase, touch_weight, sensor_phase_offset \
-                in zip(self.active_hinges, self.amplitudes, self.phases, self.touch_weights, self.sensor_phase_offset):
-            touch_sensor = control_interface.get_touch_sensor(active_hinge)
-            for neighbour in active_hinge.neighbours(2):
-                if isinstance(neighbour, ActiveHinge):
-                    neighbour_touch_sensor = control_interface.get_touch_sensor(neighbour)
-                    touch_sensor = max(touch_sensor, neighbour_touch_sensor)
-            target = amplitude * math.sin(self.t[i] + phase * config.FREQUENCY)
-            target_list.append(target)
+        for active_hinge, amplitude, phase in zip(self.active_hinges, self.amplitudes, self.phases):
+            if active_hinge.reverse_phase:
+                phase = phase + math.pi
+            target = amplitude * math.sin(self.t[i] + phase)
             control_interface.set_active_hinge_target(active_hinge, target)
-            self.t[i] += (dt * config.FREQUENCY +
-                          dt * touch_sensor * touch_weight * math.sin(self.t[i] + sensor_phase_offset))
+            self.t[i] += dt * config.FREQUENCY
             i += 1
 
         self.energy -= control_interface.get_actuator_force()
@@ -79,16 +66,12 @@ class SineBrain(Brain):
     active_hinges: list[ActiveHinge]
     amplitudes: list[float]
     phases: list[float]
-    touch_weights: list[float]
-    sensor_phase_offset: list[float]
 
     def __init__(
         self,
         active_hinges: list[ActiveHinge],
         amplitudes: list[float],
         phases: list[float],
-        touch_weights: list[float],
-        sensor_phase_offset: list[float]
     ) -> None:
         """
         Initialize the Object.
@@ -98,8 +81,6 @@ class SineBrain(Brain):
         self.active_hinges = active_hinges
         self.amplitudes = amplitudes
         self.phases = phases
-        self.touch_weights = touch_weights
-        self.sensor_phase_offset = sensor_phase_offset
 
     def make_instance(self) -> BrainInstance:
         """
@@ -111,6 +92,4 @@ class SineBrain(Brain):
             active_hinges=self.active_hinges,
             amplitudes=self.amplitudes,
             phases=self.phases,
-            touch_weights=self.touch_weights,
-            sensor_phase_offset=self.sensor_phase_offset
         )

@@ -9,15 +9,15 @@ from bayes_opt import UtilityFunction
 from sklearn.gaussian_process.kernels import Matern
 
 import config
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.base import Base
+from database_components.base import Base
 from evaluator import Evaluator
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.experiment import Experiment
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.generation import Generation
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.population import Population
+from database_components.experiment import Experiment
+from database_components.generation import Generation
+from database_components.population import Population
 from sqlalchemy.orm import Session
 import body_getter
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.genotype import Genotype
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.individual import Individual
+from database_components.genotype import Genotype
+from database_components.individual import Individual
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.rng import seed_from_time, make_rng
@@ -85,8 +85,6 @@ def run_experiment(i):
     for uuid in genotype.brain.keys():
         pbounds['amplitude_' + str(uuid)] = [0, 1]
         pbounds['phase_' + str(uuid)] = [0, 1]
-        pbounds['touch_weight_' + str(uuid)] = [0, 1]
-        pbounds['sensor_phase_offset_' + str(uuid)] = [0, 1]
 
     optimizer = BayesianOptimization(
         f=None,
@@ -97,7 +95,7 @@ def run_experiment(i):
     optimizer.set_gp_params(alpha=config.ALPHA, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds=(config.LENGTH_SCALE - 0.01, config.LENGTH_SCALE + 0.01)))
     utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
 
-    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 4 * len(genotype.brain.keys()), rng)
+    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 2 * len(genotype.brain.keys()), rng)
 
     # Run cma for the defined number of generations.
     logging.info("Start optimization process.")
@@ -114,9 +112,7 @@ def run_experiment(i):
             for key in genotype.brain.keys():
                 next_point['amplitude_' + str(key)] = lhs[i][j]
                 next_point['phase_' + str(key)] = lhs[i][j + 1]
-                next_point['touch_weight_' + str(key)] = lhs[i][j + 2]
-                next_point['sensor_phase_offset_' + str(key)] = lhs[i][j + 3]
-                j += 4
+                j += 2
             next_point = dict(sorted(next_point.items()))
         else:
             bo_point = optimizer.suggest(utility)
@@ -139,11 +135,10 @@ def run_experiment(i):
         new_learn_genotype = Genotype(brain={}, body=genotype.body)
         for brain_uuid in genotype.brain.keys():
             new_learn_genotype.brain[brain_uuid] = np.array(
-                [next_point['amplitude_' + str(brain_uuid)],
-                 next_point['phase_' + str(brain_uuid)],
-                 next_point['touch_weight_' + str(brain_uuid)],
-                 next_point['sensor_phase_offset_' + str(brain_uuid)]
-                 ]
+                [
+                    next_point['amplitude_' + str(brain_uuid)],
+                    next_point['phase_' + str(brain_uuid)],
+                ]
             )
         robot = new_learn_genotype.develop()
 

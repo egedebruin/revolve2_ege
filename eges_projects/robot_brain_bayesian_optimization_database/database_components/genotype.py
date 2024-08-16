@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from eges_projects.robot_brain_bayesian_optimization_database.database_components.base import Base
+from .base import Base
 from brain_genotype import BrainGenotype
 from body_genotype_direct import BodyGenotypeDirect
 
