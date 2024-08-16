@@ -15,7 +15,7 @@ class ActiveHinge(Module):
     ATTACHMENT = 0
 
     _map_uuid: UUID
-    _reverse_phase: bool
+    _reverse_phase: float
 
     _range: float
     _effort: float
@@ -158,7 +158,7 @@ class ActiveHinge(Module):
         self._map_uuid = new_uuid
 
     @property
-    def reverse_phase(self) -> bool | None:
+    def reverse_phase(self) -> float | None:
         """
         Get the module attached to this hinge.
 
@@ -167,7 +167,7 @@ class ActiveHinge(Module):
         return self._reverse_phase
 
     @reverse_phase.setter
-    def reverse_phase(self, new_reverse_phase: bool) -> None:
+    def reverse_phase(self, new_reverse_phase: float) -> None:
         """
         Set the module attached to this hinge.
 

@@ -1,4 +1,5 @@
 import copy
+import math
 import uuid
 from pyrr import Vector3
 
@@ -182,29 +183,13 @@ class ModuleGenotype:
 
         return self
 
-    def choose_random_module(self, rng: np.random.Generator, brain: BrainGenotype):
-        module_chooser = rng.random()
-        rotation = rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value, RightAngles.DEG_270.value])
-
-        if module_chooser < 0.5:
-            module = BrickGenotype(rotation)
-        else:
-            module = HingeGenotype(rotation)
-
-            new_brain_chooser = rng.random()
-            if config.CONTROLLERS == -1 and new_brain_chooser < config.NEW_HINGE_NEW_BRAIN:
-                module.brain_index = brain.add_new(rng)
-            else:
-                module.brain_index = rng.choice(list(brain.brain.keys()))
-
-        return module
-
 
 class CoreGenotype(ModuleGenotype):
     possible_children = [['left'], ['right'], ['front', 'back']]
     type = 'core'
     rotation = 0.0
-    reverse_phase = False
+    possible_phase_differences = [0, math.pi]
+    reverse_phase = 0
 
     def develop(self, body, grid, mirror):
         self.body_module = body.core_v1
@@ -220,13 +205,29 @@ class CoreGenotype(ModuleGenotype):
 
     def serialize(self):
         serialized = super().serialize()
-        serialized['reverse_phase'] = int(self.reverse_phase)
+
+        phase_difference_to_value = {
+            0: 0,
+            0.5 * math.pi: 2,
+            math.pi: 1,
+            1.5 * math.pi: 3,
+        }
+
+        serialized['reverse_phase'] = phase_difference_to_value[self.reverse_phase]
 
         return serialized
 
     def deserialize(self, serialized):
         super().deserialize(serialized)
-        self.reverse_phase = serialized['reverse_phase'] > 0
+
+        value_to_phase_difference = {
+            0: 0,
+            2: 0.5 * math.pi,
+            1: math.pi,
+            3: 1.5 * math.pi,
+        }
+
+        self.reverse_phase = value_to_phase_difference[serialized['reverse_phase']]
 
         return self
 
@@ -244,13 +245,17 @@ class BrickGenotype(ModuleGenotype):
 class HingeGenotype(ModuleGenotype):
     possible_children = [['attachment']]
     brain_index = -1
-    reverse_phase_value = False
+    reverse_phase_value = 0
     type = 'hinge'
 
     def develop(self, body, grid, mirror):
         super().develop(body, grid, mirror)
         self.body_module.map_uuid = self.brain_index
-        self.body_module.reverse_phase = self.reverse_phase_value and mirror
+
+        if mirror:
+            self.body_module.reverse_phase = self.reverse_phase_value
+        else:
+            self.body_module.reverse_phase = 0
 
     def get_body_module(self, reverse):
         super().get_body_module(reverse)
@@ -263,12 +268,6 @@ class HingeGenotype(ModuleGenotype):
             uuids.append(self.brain_index)
 
         return uuids
-
-    def switch_brain(self, rng: np.random.Generator, brain: BrainGenotype):
-        if rng.random() > config.SWITCH_BRAIN:
-            self.brain_index = rng.choice(list(brain.brain.keys()))
-
-        super().switch_brain(rng, brain)
 
     def reverse_phase_function(self, value):
         self.reverse_phase_value = value
@@ -308,78 +307,12 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
     def __init__(self, body: CoreGenotype):
         self.body = body
 
-    @classmethod
-    def initialize_body(cls, rng: np.random.Generator, brain: BrainGenotype):
-        number_of_modules = rng.integers(config.INIT_MIN_MODULES, config.INIT_MAX_MODULES)
-        body = CoreGenotype(0.0)
-        for _ in range(number_of_modules):
-            amount_possible_connections = body.get_amount_possible_connections()
-            connection_to_add = rng.integers(1, amount_possible_connections + 1)
-            body.add_random_module_to_connection(connection_to_add, rng, brain)
-
-        body.reverse_phase = rng.random() > 0.5
-
-        return BodyGenotypeDirect(body)
-
-    def mutate_body(self, rng: np.random.Generator, brain: BrainGenotype):
-        body = copy.deepcopy(self.body)
-        mutation_chooser = rng.random()
-
-        if mutation_chooser < 0.33:
-            for _ in range(rng.integers(1, config.MAX_ADD_MODULES + 1)):
-                amount_possible_connections = body.get_amount_possible_connections()
-                connection_to_add = rng.integers(1, amount_possible_connections + 1)
-                body.add_random_module_to_connection(connection_to_add, rng, brain)
-        elif mutation_chooser < 0.66:
-            for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
-                amount_nodes = body.get_amount_leaf_nodes()
-                if amount_nodes == 0:
-                    break
-                node_to_remove = rng.integers(1, amount_nodes + 1)
-                body.remove_leaf_node(node_to_remove)
-
-            if config.CONTROLLERS == -1:
-                used_brains = body.check_for_brains()
-                brain.remove_unused(used_brains, rng)
-        elif mutation_chooser <= 1:
-            body.reverse_phase = not body.reverse_phase
-        else:
-            body.switch_brain(rng, brain)
-
-            if config.CONTROLLERS == -1:
-                used_brains = body.check_for_brains()
-                brain.remove_unused(used_brains, rng)
-        return BodyGenotypeDirect(body), mutation_chooser
-
     def get_brain_uuids(self):
         return self.body.check_for_brains()
 
-    @staticmethod
-    def crossover_body(parent1: 'BodyGenotypeDirect', parent2: 'BodyGenotypeDirect', rng: np.random.Generator):
-        child1 = copy.deepcopy(parent1)
-        child2 = copy.deepcopy(parent2)
-
-        if len(parent1.body.children) == 0 or len(parent2.body.children) == 0:
-            return child1, child2
-
-        parent_1_branch_chooser = rng.choice(list(parent1.body.children))
-        parent_2_branch_chooser = rng.choice(list(parent2.body.children))
-
-        child1.body.children[parent_1_branch_chooser] = copy.deepcopy(parent2.body.children[parent_2_branch_chooser])
-        child2.body.children[parent_2_branch_chooser] = copy.deepcopy(parent1.body.children[parent_1_branch_chooser])
-
-        child1.body.children[parent_1_branch_chooser].rotation = (
-            rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value,
-                        RightAngles.DEG_270.value]))
-        child2.body.children[parent_2_branch_chooser].rotation = (
-            rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value,
-                        RightAngles.DEG_270.value]))
-
-        return child1, child2
-
     def develop_body(self):
         body = BodyV1()
-        self.body.reverse_phase_function(self.body.reverse_phase and config.REVERSE_PHASE)
+        self.body.reverse_phase_function(self.body.reverse_phase)
         self.body.develop(body, None, False)
         return body
 

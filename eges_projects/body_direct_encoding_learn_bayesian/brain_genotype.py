@@ -92,8 +92,7 @@ class BrainGenotype(orm.MappedAsDataclass):
         for active_hinge in active_hinges:
             amplitudes.append(self.brain[active_hinge.map_uuid][0])
             phase = self.brain[active_hinge.map_uuid][1] * 2 * math.pi
-            if active_hinge.reverse_phase:
-                phase = phase + math.pi
+            phase = phase + active_hinge.reverse_phase
             phases.append(phase)
             touch_weights.append((self.brain[active_hinge.map_uuid][2] * config.MAX_ATTRACTION_COEFFICIENT -
                                   config.MAX_ATTRACTION_COEFFICIENT))

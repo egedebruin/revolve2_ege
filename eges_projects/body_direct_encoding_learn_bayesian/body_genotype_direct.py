@@ -1,4 +1,5 @@
 import copy
+import math
 import uuid
 from pyrr import Vector3
 
@@ -204,7 +205,8 @@ class CoreGenotype(ModuleGenotype):
     possible_children = [['left'], ['right'], ['front', 'back']]
     type = 'core'
     rotation = 0.0
-    reverse_phase = False
+    possible_phase_differences = [0, math.pi]
+    reverse_phase = 0
 
     def develop(self, body, grid, mirror):
         self.body_module = body.core_v1
@@ -220,13 +222,29 @@ class CoreGenotype(ModuleGenotype):
 
     def serialize(self):
         serialized = super().serialize()
-        serialized['reverse_phase'] = int(self.reverse_phase)
+
+        phase_difference_to_value = {
+            0: 0,
+            0.5 * math.pi: 2,
+            math.pi: 1,
+            1.5 * math.pi: 3,
+        }
+
+        serialized['reverse_phase'] = phase_difference_to_value[self.reverse_phase]
 
         return serialized
 
     def deserialize(self, serialized):
         super().deserialize(serialized)
-        self.reverse_phase = serialized['reverse_phase'] > 0
+
+        value_to_phase_difference = {
+            0: 0,
+            2: 0.5 * math.pi,
+            1: math.pi,
+            3: 1.5 * math.pi,
+        }
+
+        self.reverse_phase = value_to_phase_difference[serialized['reverse_phase']]
 
         return self
 
@@ -244,13 +262,17 @@ class BrickGenotype(ModuleGenotype):
 class HingeGenotype(ModuleGenotype):
     possible_children = [['attachment']]
     brain_index = -1
-    reverse_phase_value = False
+    reverse_phase_value = 0
     type = 'hinge'
 
     def develop(self, body, grid, mirror):
         super().develop(body, grid, mirror)
         self.body_module.map_uuid = self.brain_index
-        self.body_module.reverse_phase = self.reverse_phase_value and mirror
+
+        if mirror:
+            self.body_module.reverse_phase = self.reverse_phase_value
+        else:
+            self.body_module.reverse_phase = 0
 
     def get_body_module(self, reverse):
         super().get_body_module(reverse)
@@ -317,7 +339,7 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
             connection_to_add = rng.integers(1, amount_possible_connections + 1)
             body.add_random_module_to_connection(connection_to_add, rng, brain)
 
-        body.reverse_phase = rng.random() > 0.5
+        body.reverse_phase = rng.choice(body.possible_phase_differences)
 
         return BodyGenotypeDirect(body)
 
@@ -342,7 +364,7 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
                 used_brains = body.check_for_brains()
                 brain.remove_unused(used_brains, rng)
         elif mutation_chooser <= 1:
-            body.reverse_phase = not body.reverse_phase
+            body.reverse_phase = rng.choice(body.possible_phase_differences)
         else:
             body.switch_brain(rng, brain)
 
@@ -379,7 +401,8 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
 
     def develop_body(self):
         body = BodyV1()
-        self.body.reverse_phase_function(self.body.reverse_phase and config.REVERSE_PHASE)
+        if config.REVERSE_PHASE:
+            self.body.reverse_phase_function(self.body.reverse_phase)
         self.body.develop(body, None, False)
         return body
 
