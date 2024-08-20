@@ -4,8 +4,8 @@ import logging
 
 import config
 from evaluator import Evaluator
-from eges_projects.robot_brain_cmaes_database.database_components.genotype import Genotype
-from eges_projects.robot_brain_cmaes_database.database_components.individual import Individual
+from eges_projects.learn_cmaes.database_components.genotype import Genotype
+from eges_projects.learn_cmaes.database_components.individual import Individual
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

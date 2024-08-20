@@ -6,11 +6,11 @@ from revolve2.experimentation.database import open_database_sqlite, OpenMethod
 from sqlalchemy import select
 
 from body_genotype_direct import CoreGenotype
-from experiment import Experiment
-from generation import Generation
-from genotype import Genotype
-from individual import Individual
-from population import Population
+from database_components.experiment import Experiment
+from database_components.generation import Generation
+from database_components.genotype import Genotype
+from database_components.individual import Individual
+from database_components.population import Population
 
 import matplotlib.pyplot as plt
 
@@ -30,13 +30,13 @@ def calculate_number_of_hinges(serialized_body):
 def get_df(learn, evosearch, controllers, environment, survivor_select):
     database_name = f"learn-{learn}_evosearch-{evosearch}_controllers-{controllers}_select-{survivor_select}_environment-{environment}"
     print(database_name)
-    files = [file for file in os.listdir("results/conference-september") if file.startswith(database_name)]
+    files = [file for file in os.listdir("results/1208") if file.startswith(database_name)]
     if len(files) == 0:
         return None
     dfs = []
     i = 1
     for file_name in files:
-        dbengine = open_database_sqlite("results/conference-september/" + file_name, open_method=OpenMethod.OPEN_IF_EXISTS)
+        dbengine = open_database_sqlite("results/1208/" + file_name, open_method=OpenMethod.OPEN_IF_EXISTS)
 
         df_mini = pandas.read_sql(
             select(
@@ -66,7 +66,7 @@ def get_df(learn, evosearch, controllers, environment, survivor_select):
 
 
 def make_plot(df):
-    fig, ax = plt.subplots(nrows=3, ncols=4, sharex='col', sharey='row')
+    fig, ax = plt.subplots(nrows=3, ncols=3, sharex='col', sharey='row')
     x_axis = 'function_evaluations'
     learn_to_color = {
         1: 'purple',
@@ -79,8 +79,8 @@ def make_plot(df):
         50: 'Learn budget: 50',
     }
 
-    for i, environment in enumerate(['flat', 'notsonoisy', 'almostnoisy', 'noisy']):
-        for learn in [1, 30, 50]:
+    for i, environment in enumerate(['flat', 'steps', 'noisy']):
+        for learn in [1, 30]:
             for j, thingy in enumerate(['modules', 'hinges', 'controllers']):
                 current_df = df.loc[df['environment'] == environment]
                 current_df = current_df.loc[current_df['learn'] == learn]
@@ -134,16 +134,21 @@ def make_plot(df):
         # Set the title for the first subplot of each row
         ax_row[0].annotate(title, xy=(0.5, 1), xycoords='axes fraction', ha='center', va='bottom', fontsize=12, bbox=dict(boxstyle="round,pad=0.3", edgecolor="black", facecolor="white"))
 
-    ax[0][3].legend(loc='upper left', fontsize=10)
+    ax[0][2].legend(loc='upper left', fontsize=10)
     fig.text(0.5, 0.04, 'Function Evaluations', ha='center')
+
+    fig.text(0.2, 0.9, 'Flat', va='center', rotation='horizontal', fontsize=14)
+    fig.text(0.48, 0.9, 'Steps', va='center', rotation='horizontal', fontsize=14)
+    fig.text(0.75, 0.9, 'Noisy', va='center', rotation='horizontal', fontsize=14)
+
     plt.show()
 
 
 def main() -> None:
     # dfs = []
-    # for (learn, evosearch) in [('1', '1'), ('30', '0'), ('50', '0')]:
+    # for (learn, evosearch) in [('1', '1'), ('30', '1')]:
     #     for controllers in ['adaptable']:
-    #         for environment in ['flat', 'notsonoisy', 'almostnoisy', 'noisy']:
+    #         for environment in ['flat', 'steps', 'noisy']:
     #             current_result = get_df(learn, evosearch, controllers, environment, 'tournament')
     #             current_result['learn'] = learn
     #             current_result['expected_controllers'] = controllers
@@ -153,9 +158,9 @@ def main() -> None:
     # df['learn'] = df['learn'].astype('category')
     # df['expected_controllers'] = df['expected_controllers'].astype('category')
     # df['environment'] = df['environment'].astype('category')
-    # df.to_csv('results/robot-info.csv', sep="\t")
+    # df.to_csv('results/robot-info-1208.csv', sep="\t")
 
-    df = pandas.read_csv('results/robot-info.csv', sep="\t", index_col=0)
+    df = pandas.read_csv('results/robot-info-1208.csv', sep="\t", index_col=0)
     df['learn'] = df['learn'].astype('category')
     df['expected_controllers'] = df['expected_controllers'].astype('category')
     df['environment'] = df['environment'].astype('category')

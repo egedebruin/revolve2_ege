@@ -4,13 +4,13 @@ import logging
 
 import cma
 import config
-from eges_projects.robot_brain_cmaes_database.database_components.base import Base
+from eges_projects.learn_cmaes.database_components.base import Base
 from evaluator import Evaluator
-from eges_projects.robot_brain_cmaes_database.database_components.experiment import Experiment
-from eges_projects.robot_brain_cmaes_database.database_components.generation import Generation
-from eges_projects.robot_brain_cmaes_database.database_components.genotype import Genotype
-from eges_projects.robot_brain_cmaes_database.database_components.individual import Individual
-from eges_projects.robot_brain_cmaes_database.database_components.population import Population
+from eges_projects.learn_cmaes.database_components.experiment import Experiment
+from eges_projects.learn_cmaes.database_components.generation import Generation
+from eges_projects.learn_cmaes.database_components.genotype import Genotype
+from eges_projects.learn_cmaes.database_components.individual import Individual
+from eges_projects.learn_cmaes.database_components.population import Population
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -42,10 +42,8 @@ def run_experiment(dbengine: Engine) -> None:
         session.add(experiment)
         session.commit()
 
-    body = config.BODY
-
     # Find all active hinges in the body
-    active_hinges = body.find_modules_of_type(ActiveHinge)
+    active_hinges = config.BODY.find_modules_of_type(ActiveHinge)
 
     # Create a structure for the CPG network from these hinges.
     # This also returns a mapping between active hinges and the index of there corresponding cpg in the network.
@@ -59,20 +57,16 @@ def run_experiment(dbengine: Engine) -> None:
         headless=True,
         num_simulators=config.NUM_SIMULATORS,
         cpg_network_structure=cpg_network_structure,
-        body=body,
+        body=config.BODY,
         output_mapping=output_mapping,
-        active_hinges=active_hinges
     )
 
-    number_of_params = len(active_hinges) * 4
-
     # Initial parameter values for the brain.
-    initial_mean = number_of_params * [0.5]
+    initial_mean = cpg_network_structure.num_connections * [0.5]
 
     # Initialize the cma optimizer.
     options = cma.CMAOptions()
-    options.set("bounds", [0, 1.0])
-    options.set("popsize", 10)
+    options.set("bounds", [-1.0, 1.0])
     options.set("seed", rng_seed)
     opt = cma.CMAEvolutionStrategy(initial_mean, config.INITIAL_STD, options)
 

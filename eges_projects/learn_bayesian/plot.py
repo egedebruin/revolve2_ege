@@ -3,10 +3,10 @@
 import config
 import matplotlib.pyplot as plt
 import pandas
-from eges_projects.robot_brain_cmaes_database.database_components.experiment import Experiment
-from eges_projects.robot_brain_cmaes_database.database_components.generation import Generation
-from eges_projects.robot_brain_cmaes_database.database_components.individual import Individual
-from eges_projects.robot_brain_cmaes_database.database_components.population import Population
+from database_components.experiment import Experiment
+from database_components.generation import Generation
+from database_components.individual import Individual
+from database_components.population import Population
 from sqlalchemy import select
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
@@ -17,11 +17,12 @@ def main() -> None:
     """Run the program."""
     setup_logging()
 
+    dfs = []
     dbengine = open_database_sqlite(
         config.DATABASE_FILE, open_method=OpenMethod.OPEN_IF_EXISTS
     )
 
-    df = pandas.read_sql(
+    dfs.append(pandas.read_sql(
         select(
             Experiment.id.label("experiment_id"),
             Generation.generation_index,
@@ -31,7 +32,8 @@ def main() -> None:
         .join_from(Generation, Population, Generation.population_id == Population.id)
         .join_from(Population, Individual, Population.id == Individual.population_id),
         dbengine,
-    )
+    ))
+    df = pandas.concat(dfs)
 
     agg_per_experiment_per_generation = (
         df.groupby(["experiment_id", "generation_index"])

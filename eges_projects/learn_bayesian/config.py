@@ -3,9 +3,9 @@
 from revolve2.ci_group.modular_robots_v1 import gecko_v1
 from revolve2.ci_group.modular_robots_v1 import snake_v1
 
-DATABASE_FILE = "test"
+DATABASE_FILE = "results/after_learn/learn-1_evosearch-1_controllers-adaptable_select-tournament_environment-flat_1_flat_1.sqlite"
 DATABASE_FILE_OLD = "old_file.sqlite"
-ENVIRONMENT = "flat"
+ENVIRONMENT = "noisy"
 NUM_SIMULATORS = 1
 NUM_PARALLEL_PROCESSES = 10
 NUM_GENERATIONS = 270
