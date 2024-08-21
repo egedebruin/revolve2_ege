@@ -59,7 +59,7 @@ def run_experiment(i, old_file, environment):
 
     # Open the database, only if it does not already exists.
     dbengine = open_database_sqlite(
-        'results/after_learn/' + old_file.replace(".sqlite", "") + "_" + environment + "_" + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
+        'results/after_learn2/' + old_file.replace(".sqlite", "") + "_" + environment + "_" + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
     )
     # Create the structure of the database.
     Base.metadata.create_all(dbengine)

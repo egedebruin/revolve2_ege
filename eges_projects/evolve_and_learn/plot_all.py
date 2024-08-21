@@ -37,7 +37,7 @@ def get_df(learn, evosearch, controllers, environment, survivor_select):
         df_mini = df_mini[df_mini['experiment_id'] == 1]
         df_mini['experiment_id'] = i
 
-        df_mini['morphologies'] = df_mini['generation_index'] * 50 + 50
+        df_mini['morphologies'] = df_mini['generation_index'] + 1
         df_mini['function_evaluations'] = df_mini['generation_index'] * int(learn) * 50 + int(learn) * 50
         dfs.append(df_mini)
         i += 1
@@ -110,7 +110,7 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, evosearch,
     if x_axis == "function_evaluations":
         ax_thingy.set_xlim(0, 200000)
     else:
-        ax_thingy.set_xlim(0, 6000)
+        ax_thingy.set_xlim(0, 150)
 
 
 def main() -> None:

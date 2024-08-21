@@ -1,4 +1,3 @@
-import numpy as np
 import pandas
 import json
 import os
@@ -125,6 +124,7 @@ def make_plot(df):
                     alpha=0.1,
                     color=learn_to_color[learn]
                 )
+                #ax[j][i].set_xlim(0, 7000)
 
     # Titles for each row
     row_titles = ['Modules', 'Hinges', 'Controllers']
