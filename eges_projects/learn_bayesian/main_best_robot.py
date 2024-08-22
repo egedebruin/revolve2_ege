@@ -59,7 +59,7 @@ def run_experiment(i, old_file, environment):
 
     # Open the database, only if it does not already exists.
     dbengine = open_database_sqlite(
-        'results/after_learn2/' + old_file.replace(".sqlite", "") + "_" + environment + "_" + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
+        'results/after_learn3/' + old_file.replace(".sqlite", "") + "_" + environment + "_" + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
     )
     # Create the structure of the database.
     Base.metadata.create_all(dbengine)
@@ -113,9 +113,8 @@ def run_experiment(i, old_file, environment):
             j = 0
             next_point = {}
             for key in genotype.brain.keys():
-                next_point['amplitude_' + str(key)] = lhs[i][j]
-                next_point['phase_' + str(key)] = lhs[i][j + 1]
-                j += 2
+                next_point['amplitude_' + str(key)] = genotype.brain[key][0]
+                next_point['phase_' + str(key)] = genotype.brain[key][1]
             next_point = dict(sorted(next_point.items()))
         else:
             bo_point = optimizer.suggest(utility)
