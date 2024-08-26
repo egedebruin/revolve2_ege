@@ -308,7 +308,7 @@ def run_experiment(dbengine: Engine) -> None:
             offspring_genotypes = []
             for [parent_i] in parents:
                 child_genotype = population.individuals[parent_i].genotype.mutate(rng)
-                child_genotype.parent_1 = population.individuals[parent_i].genotype.id
+                child_genotype.parent_1_genotype_id = population.individuals[parent_i].genotype.id
                 offspring_genotypes.append(child_genotype)
 
         # Evaluate the offspring.
