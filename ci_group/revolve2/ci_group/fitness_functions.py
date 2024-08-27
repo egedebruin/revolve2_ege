@@ -2,7 +2,11 @@
 
 import math
 
-from revolve2.modular_robot_simulation import ModularRobotSimulationState
+import numpy as np
+from pyrr import Vector3
+
+from revolve2.modular_robot import ModularRobot
+from revolve2.modular_robot_simulation import ModularRobotSimulationState, SceneSimulationState
 
 
 def xy_displacement(
@@ -33,3 +37,33 @@ def forward_displacement(
         return 0.0
 
     return end_position.y - begin_position.y
+
+
+def detect_outliers(
+        states: list[SceneSimulationState], robot: ModularRobot
+) -> list[float]:
+    previous = Vector3([0, 0, 0])
+    distances = []
+    for scene_state in states:
+        current = scene_state.get_modular_robot_simulation_state(robot).get_pose().position
+
+        distance = math.sqrt(
+            (previous.x - current.x) ** 2
+            + (previous.y - current.y) ** 2
+        )
+        distances.append(distance)
+
+        previous = current
+
+    Q1 = np.percentile(distances, 25)
+    Q3 = np.percentile(distances, 75)
+
+    # Calculate the Interquartile Range (IQR)
+    IQR = Q3 - Q1
+
+    # Define the bounds for outliers
+    lower_bound = Q1 - 2.5 * IQR
+    upper_bound = Q3 + 2.5 * IQR
+
+    # Detect outliers
+    return [x for x in distances if x < lower_bound or x > upper_bound]

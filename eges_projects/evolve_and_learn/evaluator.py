@@ -1,6 +1,7 @@
 """Evaluator class."""
 
 import math
+import matplotlib.pyplot as plt
 
 import numpy as np
 import numpy.typing as npt
@@ -85,6 +86,9 @@ class Evaluator:
             batch_parameters=make_standard_batch_parameters(),
             scenes=scenes,
         )
+
+        if len(fitness_functions.detect_outliers(scene_states[0], robot)) > 1:
+            return 0
 
         return fitness_functions.forward_displacement(
                 scene_states[0][0].get_modular_robot_simulation_state(robot),
