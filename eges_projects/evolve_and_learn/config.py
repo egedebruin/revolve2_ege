@@ -16,7 +16,7 @@ SWITCH_BRAIN = 0.5
 MAX_ADD_MODULES = 1
 MAX_DELETE_MODULES = 1
 
-MAX_NUMBER_OF_MODULES = 60
+MAX_NUMBER_OF_MODULES = 30
 
 KAPPA = 3  # Variation for Acquisition function (Low is exploitation, high is exploration)
 ALPHA = 0  # Sampling noise
