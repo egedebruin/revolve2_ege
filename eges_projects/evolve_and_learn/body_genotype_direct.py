@@ -205,7 +205,7 @@ class CoreGenotype(ModuleGenotype):
     possible_children = [['left'], ['right'], ['front', 'back']]
     type = 'core'
     rotation = 0.0
-    possible_phase_differences = [0, math.pi]
+    possible_phase_differences = [math.pi]
     reverse_phase = 0
 
     def develop(self, body, grid, mirror):
@@ -347,12 +347,12 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
         body = copy.deepcopy(self.body)
         mutation_chooser = rng.random()
 
-        if mutation_chooser < 0.33:
+        if mutation_chooser < 0.5:
             for _ in range(rng.integers(1, config.MAX_ADD_MODULES + 1)):
                 amount_possible_connections = body.get_amount_possible_connections()
                 connection_to_add = rng.integers(1, amount_possible_connections + 1)
                 body.add_random_module_to_connection(connection_to_add, rng, brain)
-        elif mutation_chooser < 0.66:
+        elif mutation_chooser <= 1:
             for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
                 amount_nodes = body.get_amount_leaf_nodes()
                 if amount_nodes == 0:
@@ -363,7 +363,7 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
             if config.CONTROLLERS == -1:
                 used_brains = body.check_for_brains()
                 brain.remove_unused(used_brains, rng)
-        elif mutation_chooser <= 1:
+        elif mutation_chooser <= 2:
             body.reverse_phase = rng.choice(body.possible_phase_differences)
         else:
             body.switch_brain(rng, brain)

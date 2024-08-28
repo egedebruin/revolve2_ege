@@ -13,10 +13,10 @@ NEW_HINGE_NEW_BRAIN = 1
 INIT_MIN_MODULES = 3
 INIT_MAX_MODULES = 10
 SWITCH_BRAIN = 0.5
-MAX_ADD_MODULES = 1
-MAX_DELETE_MODULES = 1
+MAX_ADD_MODULES = 3
+MAX_DELETE_MODULES = 3
 
-MAX_NUMBER_OF_MODULES = 30
+MAX_NUMBER_OF_MODULES = 40
 
 KAPPA = 3  # Variation for Acquisition function (Low is exploitation, high is exploration)
 ALPHA = 0  # Sampling noise
