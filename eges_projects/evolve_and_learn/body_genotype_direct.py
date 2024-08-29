@@ -137,7 +137,12 @@ class ModuleGenotype:
     def remove_node(self, index):
         for direction, module in self.children.items():
             if index == 1:
-                self.children.pop(direction)
+                child = self.children.pop(direction)
+
+                for key in child.children.keys():
+                    if key in self.possible_children and key not in self.children.keys():
+                        self.children[key] = child.children[key]
+
                 return 0
             index = module.remove_node(index - 1)
             if index == 0:
@@ -219,6 +224,13 @@ class CoreGenotype(ModuleGenotype):
             nodes += module.get_amount_nodes()
 
         return nodes
+
+    def remove_node(self, index):
+        for direction, module in self.children.items():
+            index = module.remove_node(index)
+            if index == 0:
+                return 0
+        return index
 
     def serialize(self):
         serialized = super().serialize()
@@ -354,11 +366,11 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
                 body.add_random_module_to_connection(connection_to_add, rng, brain)
         elif mutation_chooser <= 1:
             for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
-                amount_nodes = body.get_amount_leaf_nodes()
+                amount_nodes = body.get_amount_nodes()
                 if amount_nodes == 0:
                     break
                 node_to_remove = rng.integers(1, amount_nodes + 1)
-                body.remove_leaf_node(node_to_remove)
+                body.remove_node(node_to_remove)
 
             if config.CONTROLLERS == -1:
                 used_brains = body.check_for_brains()

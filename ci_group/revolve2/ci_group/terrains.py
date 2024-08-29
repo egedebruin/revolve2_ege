@@ -101,7 +101,7 @@ def hills(length: float = 10.0, height=0.0, num_edges=50) -> Terrain:
     )
 
 
-def steps(length: float = 10.0, height=0.0, num_edges=30) -> Terrain:
+def steps(length: float = 10.0, height=0.0, num_edges=50) -> Terrain:
     size = Vector2([3.0, length])
     height = height/100
     heights = []
@@ -112,7 +112,7 @@ def steps(length: float = 10.0, height=0.0, num_edges=30) -> Terrain:
             if j < num_edges * 0.03:
                 row_height.append(current_height)
                 continue
-            if j % (num_edges / 40) == 0.0:
+            if j % (num_edges / 20) == 0.0:
                 current_height += height
             row_height.append(current_height)
         row_height = row_height[::-1]
