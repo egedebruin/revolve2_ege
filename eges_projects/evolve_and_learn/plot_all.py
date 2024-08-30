@@ -11,17 +11,18 @@ from sqlalchemy import select
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 
+folder = "results/3008"
 
 def get_df(learn, evosearch, controllers, environment, survivor_select):
     database_name = f"learn-{learn}_evosearch-{evosearch}_controllers-{controllers}_select-{survivor_select}_environment-{environment}"
     print(database_name)
-    files = [file for file in os.listdir("results/1208") if file.startswith(database_name)]
+    files = [file for file in os.listdir(folder) if file.startswith(database_name)]
     if len(files) == 0:
         return None
     dfs = []
     i = 1
     for file_name in files:
-        dbengine = open_database_sqlite("results/1208/" + file_name, open_method=OpenMethod.OPEN_IF_EXISTS)
+        dbengine = open_database_sqlite(folder + "/" + file_name, open_method=OpenMethod.OPEN_IF_EXISTS)
 
         df_mini = pandas.read_sql(
             select(
@@ -110,7 +111,7 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, evosearch,
     if x_axis == "function_evaluations":
         ax_thingy.set_xlim(0, 200000)
     else:
-        ax_thingy.set_xlim(0, 150)
+        ax_thingy.set_xlim(0, 135)
 
 
 def main() -> None:

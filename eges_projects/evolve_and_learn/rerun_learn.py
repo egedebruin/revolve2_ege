@@ -36,7 +36,6 @@ def main() -> None:
             .join_from(Genotype, Individual, Individual.genotype_id == Genotype.id)
             .join_from(Individual, Population, Population.id == Individual.population_id)
             .join_from(Population, Generation, Generation.population_id == Population.id)
-            .where(Generation.generation_index < 121)
             .order_by(LearnIndividual.fitness.desc())
             .limit(1)
         ).one()
@@ -47,7 +46,7 @@ def main() -> None:
     modular_robot = genotype.develop()
 
     print(f"Best fitness: {fitness}")
-    print(genotype.brain)
+    print(len(genotype.brain))
 
     # Create the evaluator.
     evaluator = Evaluator(headless=False, num_simulators=1)

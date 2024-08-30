@@ -71,9 +71,6 @@ class Evaluator:
         :returns: Fitnesses of the solutions.
         """
 
-        if len(robot.body.find_modules_of_type(ActiveHingeV1)) + len(robot.body.find_modules_of_type(BrickV1)) > config.MAX_NUMBER_OF_MODULES:
-            return 0
-
         # Create the scenes.
         scenes = []
         scene = ModularRobotScene(terrain=self._terrain)

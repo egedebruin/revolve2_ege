@@ -19,7 +19,7 @@ def calculate_number_of_controllers(serialized_body):
 
 
 def calculate_number_of_modules(serialized_body):
-    return CoreGenotype(0.0).deserialize(json.loads(serialized_body)).get_amount_nodes()
+    return CoreGenotype(0.0).deserialize(json.loads(serialized_body)).get_amount_modules()
 
 
 def calculate_number_of_hinges(serialized_body):
@@ -29,13 +29,13 @@ def calculate_number_of_hinges(serialized_body):
 def get_df(learn, evosearch, controllers, environment, survivor_select):
     database_name = f"learn-{learn}_evosearch-{evosearch}_controllers-{controllers}_select-{survivor_select}_environment-{environment}"
     print(database_name)
-    files = [file for file in os.listdir("results/1208") if file.startswith(database_name)]
+    files = [file for file in os.listdir("results/3008") if file.startswith(database_name)]
     if len(files) == 0:
         return None
     dfs = []
     i = 1
     for file_name in files:
-        dbengine = open_database_sqlite("results/1208/" + file_name, open_method=OpenMethod.OPEN_IF_EXISTS)
+        dbengine = open_database_sqlite("results/3008/" + file_name, open_method=OpenMethod.OPEN_IF_EXISTS)
 
         df_mini = pandas.read_sql(
             select(
@@ -68,18 +68,18 @@ def make_plot(df):
     fig, ax = plt.subplots(nrows=3, ncols=3, sharex='col', sharey='row')
     x_axis = 'function_evaluations'
     learn_to_color = {
-        1: 'purple',
-        30: 'blue',
-        50: 'red'
+        '1': 'purple',
+        '30': 'blue',
+        '50': 'red'
     }
     learn_to_label = {
-        1: 'Learn budget: 1',
-        30: 'Learn budget: 30',
-        50: 'Learn budget: 50',
+        '1': 'Learn budget: 1',
+        '30': 'Learn budget: 30',
+        '50': 'Learn budget: 50',
     }
 
     for i, environment in enumerate(['flat', 'steps', 'noisy']):
-        for learn in [1, 30]:
+        for learn in ['1', '30']:
             for j, thingy in enumerate(['modules', 'hinges', 'controllers']):
                 current_df = df.loc[df['environment'] == environment]
                 current_df = current_df.loc[current_df['learn'] == learn]
@@ -145,25 +145,25 @@ def make_plot(df):
 
 
 def main() -> None:
-    # dfs = []
-    # for (learn, evosearch) in [('1', '1'), ('30', '1')]:
-    #     for controllers in ['adaptable']:
-    #         for environment in ['flat', 'steps', 'noisy']:
-    #             current_result = get_df(learn, evosearch, controllers, environment, 'tournament')
-    #             current_result['learn'] = learn
-    #             current_result['expected_controllers'] = controllers
-    #             current_result['environment'] = environment
-    #             dfs.append(current_result)
-    # df = pandas.concat(dfs)
-    # df['learn'] = df['learn'].astype('category')
-    # df['expected_controllers'] = df['expected_controllers'].astype('category')
-    # df['environment'] = df['environment'].astype('category')
-    # df.to_csv('results/robot-info-1208.csv', sep="\t")
-
-    df = pandas.read_csv('results/robot-info-1208.csv', sep="\t", index_col=0)
+    dfs = []
+    for (learn, evosearch) in [('1', '1'), ('30', '1')]:
+        for controllers in ['adaptable']:
+            for environment in ['flat', 'steps', 'noisy']:
+                current_result = get_df(learn, evosearch, controllers, environment, 'tournament')
+                current_result['learn'] = learn
+                current_result['expected_controllers'] = controllers
+                current_result['environment'] = environment
+                dfs.append(current_result)
+    df = pandas.concat(dfs)
     df['learn'] = df['learn'].astype('category')
     df['expected_controllers'] = df['expected_controllers'].astype('category')
     df['environment'] = df['environment'].astype('category')
+    # df.to_csv('results/robot-info-1208.csv', sep="\t")
+
+    # df = pandas.read_csv('results/robot-info-1208.csv', sep="\t", index_col=0)
+    # df['learn'] = df['learn'].astype('category')
+    # df['expected_controllers'] = df['expected_controllers'].astype('category')
+    # df['environment'] = df['environment'].astype('category')
 
     make_plot(df)
 
