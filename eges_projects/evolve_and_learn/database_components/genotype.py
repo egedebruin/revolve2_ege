@@ -10,7 +10,7 @@ from .base import Base
 
 import config
 from body_genotype_direct import BodyGenotypeDirect
-from brain_genotype import BrainGenotype
+from brain_genotype_simple import BrainGenotype
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot
 

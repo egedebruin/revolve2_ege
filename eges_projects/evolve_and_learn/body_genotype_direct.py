@@ -180,9 +180,18 @@ class ModuleGenotype:
             if index == 1:
                 child = self.children.pop(direction)
 
-                for key in child.children.keys():
-                    if key in self.possible_children and key not in self.children.keys():
-                        self.children[key] = child.children[key]
+                for child_direction in child.children.keys():
+
+                    temp_key = list(child_direction)
+                    if self.type == 'hinge' and list(child_direction) == ['front']:
+                        temp_key = ['attachment']
+                    elif self.type in ['core', 'brick'] and list(child_direction) == ['attachment']:
+                        temp_key = list(direction)
+                    elif self.type == 'core' and list(child_direction) in [['front'], ['back']]:
+                        temp_key = ['front', 'back']
+
+                    if temp_key in self.possible_children and tuple(temp_key) not in self.children.keys():
+                        self.children[tuple(temp_key)] = child.children[child_direction]
 
                 return 0
             index = module.remove_node(index - 1)
@@ -261,13 +270,6 @@ class CoreGenotype(ModuleGenotype):
             nodes += module.get_amount_nodes()
 
         return nodes
-
-    def remove_node(self, index):
-        for direction, module in self.children.items():
-            index = module.remove_node(index)
-            if index == 0:
-                return 0
-        return index
 
     def serialize(self):
         serialized = super().serialize()
