@@ -102,7 +102,7 @@ def run_experiment(dbengine: Engine) -> None:
     population = Population(
         individuals=individuals
     )
-    population = selection.calculate_reproduction_fitness(population)
+    selection.calculate_reproduction_fitness(population)
     generation = Generation(
         experiment=experiment, generation_index=0, population=population
     )
@@ -177,7 +177,7 @@ def learn_genotype(genotype, evaluator, rng):
         empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
         population = LearnPopulation(
             individuals=[
-                LearnIndividual(genotype=empty_learn_genotype, fitness=0)
+                LearnIndividual(genotype=empty_learn_genotype, objective_value=0)
             ]
         )
         return 0, [LearnGeneration(
@@ -271,7 +271,7 @@ def learn_genotype(genotype, evaluator, rng):
         # From the samples and fitnesses, create a population that we can save.
         population = LearnPopulation(
             individuals=[
-                LearnIndividual(genotype=new_learn_genotype, fitness=objective_value)
+                LearnIndividual(genotype=new_learn_genotype, objective_value=objective_value)
             ]
         )
         # Make it all into a generation and save it to the database.
@@ -312,11 +312,11 @@ def read_args():
     config.ENVIRONMENT = args.environment
     config.EVOLUTIONARY_SEARCH = args.evosearch == '1'
     config.SURVIVOR_SELECT_STRATEGY = args.survivorselect
-    config.PARENT_SELECT_STRATEGY = args.parent_select
+    config.PARENT_SELECT_STRATEGY = args.parentselect
     controllers_string = 'adaptable' if config.CONTROLLERS == -1 else config.CONTROLLERS
     config.DATABASE_FILE = ("learn-" + str(args.learn) + "_evosearch-" + args.evosearch + "_controllers-" +
                             str(controllers_string) + "_survivorselect-" + args.survivorselect + "_parentselect-" +
-                            args.parent_select + "_environment-" + args.environment + "_" + str(args.repetition) + ".sqlite")
+                            args.parentselect + "_environment-" + args.environment + "_" + str(args.repetition) + ".sqlite")
 
 
 def main() -> None:
