@@ -39,7 +39,6 @@ class Individual(HasId, orm.MappedAsDataclass, Generic[TGenotype]):
         )
         genotype_id: orm.Mapped[int] = orm.mapped_column(nullable=False, init=False)
         genotype: orm.Mapped[TGenotype] = orm.relationship()
-        fitness: orm.Mapped[float] = orm.mapped_column(nullable=False)
 
     # ----------------------
     # Implementation details
@@ -61,10 +60,6 @@ class Individual(HasId, orm.MappedAsDataclass, Generic[TGenotype]):
         @orm.declared_attr
         def genotype(cls) -> orm.Mapped[TGenotype]:  # noqa
             return cls.__genotype_impl()
-
-        @orm.declared_attr
-        def fitness(cls) -> orm.Mapped[float]:  # noqa
-            return cls.__fitness_impl()
 
     __type_tgenotype: ClassVar[Type[TGenotype]]  # type: ignore[misc]
     __population_table: ClassVar[str]
@@ -117,7 +112,3 @@ class Individual(HasId, orm.MappedAsDataclass, Generic[TGenotype]):
     @classmethod
     def __genotype_impl(cls) -> orm.Mapped[TGenotype]:
         return orm.relationship(cls.__type_tgenotype)
-
-    @classmethod
-    def __fitness_impl(cls) -> orm.Mapped[float]:
-        return orm.mapped_column(nullable=False)

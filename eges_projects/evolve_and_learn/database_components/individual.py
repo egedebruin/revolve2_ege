@@ -18,3 +18,6 @@ class Individual(
 
     __tablename__ = "individual"
     original_generation: orm.Mapped[int] = orm.mapped_column(nullable=False)
+    objective_value: orm.Mapped[float] = orm.mapped_column(nullable=False)
+    reproduction_fitness: orm.Mapped[float] = orm.mapped_column(nullable=True)
+    survivor_fitness: orm.Mapped[float] = orm.mapped_column(nullable=True)

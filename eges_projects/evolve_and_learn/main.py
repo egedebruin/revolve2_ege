@@ -112,7 +112,7 @@ def select_parent(
 def select_survivors_newest(original_population: Population, offspring_population: Population) -> Population:
     original_individuals = []
     for individual in original_population.individuals:
-        original_individuals.append((individual.genotype, individual.original_generation, individual.fitness))
+        original_individuals.append((individual.genotype, individual.original_generation, individual.fitness, individual.objective_value))
     original_individuals = sorted(original_individuals, key=lambda x: (-x[1], -x[2]))
     original_survivors = original_individuals[:config.POPULATION_SIZE - config.OFFSPRING_SIZE]
 
@@ -121,9 +121,10 @@ def select_survivors_newest(original_population: Population, offspring_populatio
                         Individual(
                             genotype=genotype,
                             fitness=fitness,
+                            objective_value=objective_value,
                             original_generation=original_generation
                         )
-                        for (genotype, original_generation, fitness) in original_survivors
+                        for (genotype, original_generation, fitness, objective_value) in original_survivors
                     ] +
                     offspring_population.individuals
     )
@@ -160,6 +161,7 @@ def select_survivors_tournament(
             Individual(
                 genotype=original_population.individuals[i].genotype,
                 fitness=original_population.individuals[i].fitness,
+                objective_value=original_population.individuals[i].objective_value,
                 original_generation=original_population.individuals[i].original_generation
             )
             for i in original_survivors
@@ -168,6 +170,7 @@ def select_survivors_tournament(
             Individual(
                 genotype=offspring_population.individuals[i].genotype,
                 fitness=offspring_population.individuals[i].fitness,
+                objective_value=original_population.individuals[i].objective_value,
                 original_generation=original_population.individuals[i].original_generation
             )
             for i in offspring_survivors
@@ -189,10 +192,10 @@ def select_survivors_best(
     """
     individuals = []
     for individual in original_population.individuals:
-        individuals.append((individual.genotype, individual.fitness, individual.original_generation))
+        individuals.append((individual.genotype, individual.objective_value, individual.fitness, individual.original_generation))
     for individual in offspring_population.individuals:
-        individuals.append((individual.genotype, individual.fitness, individual.original_generation))
-    individuals = sorted(individuals, key=lambda x: (-x[1]))
+        individuals.append((individual.genotype, individual.objective_value, individual.fitness, individual.original_generation))
+    individuals = sorted(individuals, key=lambda x: (-x[2]))
     survivors = individuals[:config.POPULATION_SIZE]
 
     return Population(
@@ -200,27 +203,64 @@ def select_survivors_best(
                         Individual(
                             genotype=genotype,
                             fitness=fitness,
+                            objective_value=objective_value,
                             original_generation=original_generation
                         )
-                        for (genotype, fitness, original_generation) in survivors
+                        for (genotype, objective_value, fitness, original_generation) in survivors
                     ]
     )
 
 
-def find_best_robot(
-        current_best: Individual | None, population: list[Individual]
-) -> Individual:
-    """
-    Return the best robot between the population and the current best individual.
+def generate_offspring(rng, population):
+    if config.CROSSOVER:
+        parents = select_parents(rng, population, config.OFFSPRING_SIZE / 2)
+        # Create offspring. Two offspring per pair of parents, with a copy of one of its parents' distribution
+        offspring_genotypes = []
+        for parent1_i, parent2_i in parents:
+            child_genotype_1, child_genotype_2 = Genotype.crossover(
+                population.individuals[parent1_i].genotype,
+                population.individuals[parent2_i].genotype,
+                rng,
+            )
+            new_genotype_1 = child_genotype_1.mutate(rng)
+            new_genotype_2 = child_genotype_2.mutate(rng)
+            new_genotype_1.parent_1_genotype_id = population.individuals[parent1_i].genotype.id
+            new_genotype_1.parent_2_genotype_id = population.individuals[parent2_i].genotype.id
+            new_genotype_2.parent_1_genotype_id = population.individuals[parent1_i].genotype.id
+            new_genotype_2.parent_2_genotype_id = population.individuals[parent2_i].genotype.id
 
-    :param current_best: The current best individual.
-    :param population: The population.
-    :returns: The best individual.
-    """
-    return max(
-        population + [] if current_best is None else [current_best],
-        key=lambda x: x.fitness,
-    )
+            offspring_genotypes.append(new_genotype_1)
+            offspring_genotypes.append(new_genotype_2)
+    else:
+        parents = select_parent(rng, population, config.OFFSPRING_SIZE)
+        offspring_genotypes = []
+        for [parent_i] in parents:
+            child_genotype = population.individuals[parent_i].genotype.mutate(rng)
+            child_genotype.parent_1_genotype_id = population.individuals[parent_i].genotype.id
+            offspring_genotypes.append(child_genotype)
+    return offspring_genotypes
+
+
+def select_survivors(rng, original_population, offspring_population):
+    if config.SELECT_STRATEGY == 'newest':
+        population = select_survivors_newest(
+            original_population,
+            offspring_population,
+        )
+    elif config.SELECT_STRATEGY == 'tournament':
+        population = select_survivors_tournament(
+            rng,
+            original_population,
+            offspring_population,
+        )
+    elif config.SELECT_STRATEGY == 'best':
+        population = select_survivors_best(
+            original_population,
+            offspring_population,
+        )
+    else:
+        raise Exception("Unrecognized SELECT_STRATEGY")
+    return population
 
 
 def run_experiment(dbengine: Engine) -> None:
@@ -259,16 +299,17 @@ def run_experiment(dbengine: Engine) -> None:
     # Evaluate the initial population.
     logging.info("Evaluating initial population.")
 
-    initial_fitnesses, initial_genotypes = learn_population(genotypes=initial_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
+    initial_objective_values, initial_genotypes = learn_population(genotypes=initial_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
 
     # Create a population of individuals, combining genotype with fitness.
     individuals = []
-    for genotype, fitness in zip(initial_genotypes, initial_fitnesses):
-        individual = Individual(genotype=genotype, fitness=fitness, original_generation=0)
+    for genotype, objective_value in zip(initial_genotypes, initial_objective_values):
+        individual = Individual(genotype=genotype, objective_value=objective_value, original_generation=0)
         individuals.append(individual)
     population = Population(
         individuals=individuals
     )
+    # TODO: Calculate reproduction fitness
     generation = Generation(
         experiment=experiment, generation_index=0, population=population
     )
@@ -284,65 +325,23 @@ def run_experiment(dbengine: Engine) -> None:
             f"Real generation {generation.generation_index + 1} / {config.NUM_GENERATIONS}."
         )
 
-        if config.CROSSOVER:
-            parents = select_parents(rng, population, config.OFFSPRING_SIZE / 2)
-            # Create offspring. Two offspring per pair of parents, with a copy of one of its parents' distribution
-            offspring_genotypes = []
-            for parent1_i, parent2_i in parents:
-                child_genotype_1, child_genotype_2 = Genotype.crossover(
-                    population.individuals[parent1_i].genotype,
-                    population.individuals[parent2_i].genotype,
-                    rng,
-                )
-                new_genotype_1 = child_genotype_1.mutate(rng)
-                new_genotype_2 = child_genotype_2.mutate(rng)
-                new_genotype_1.parent_1_genotype_id = population.individuals[parent1_i].genotype.id
-                new_genotype_1.parent_2_genotype_id = population.individuals[parent2_i].genotype.id
-                new_genotype_2.parent_1_genotype_id = population.individuals[parent1_i].genotype.id
-                new_genotype_2.parent_2_genotype_id = population.individuals[parent2_i].genotype.id
-
-                offspring_genotypes.append(new_genotype_1)
-                offspring_genotypes.append(new_genotype_2)
-        else:
-            parents = select_parent(rng, population, config.OFFSPRING_SIZE)
-            offspring_genotypes = []
-            for [parent_i] in parents:
-                child_genotype = population.individuals[parent_i].genotype.mutate(rng)
-                child_genotype.parent_1_genotype_id = population.individuals[parent_i].genotype.id
-                offspring_genotypes.append(child_genotype)
+        offspring_genotypes = generate_offspring(rng, population)
 
         # Evaluate the offspring.
-        offspring_fitnesses, offspring_genotypes = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
+        offspring_objective_values, offspring_genotypes = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
 
         # Make an intermediate offspring population.
         offspring_individuals = [
-            Individual(genotype=genotype, fitness=fitness, original_generation=generation.generation_index + 1) for
-            genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
+            Individual(genotype=genotype, objective_value=objective_value, original_generation=generation.generation_index + 1) for
+            genotype, objective_value in zip(offspring_genotypes, offspring_objective_values)]
+        offspring_population = Population(
+                individuals=offspring_individuals
+            )
         # Create the next population by selecting survivors.
-        if config.SELECT_STRATEGY == 'newest':
-            population = select_survivors_newest(
-                population,
-                Population(
-                    individuals=offspring_individuals
-                ),
-            )
-        elif config.SELECT_STRATEGY == 'tournament':
-            population = select_survivors_tournament(
-                rng,
-                population,
-                Population(
-                    individuals=offspring_individuals
-                ),
-            )
-        elif config.SELECT_STRATEGY == 'best':
-            population = select_survivors_best(
-                population,
-                Population(
-                    individuals=offspring_individuals
-                ),
-            )
-        else:
-            raise Exception("Unrecognized SELECT_STRATEGY")
+        # TODO: Calculate survivor fitness
+        population = select_survivors(rng, population, offspring_population)
+        # TODO: Calculate reproduction fitness
+
         # Make it all into a generation and save it to the database.
         generation = Generation(
             experiment=experiment,
@@ -363,19 +362,19 @@ def learn_population(genotypes, evaluator, dbengine, rng):
             executor.submit(learn_genotype, genotype, evaluator, rng)
             for genotype in genotypes
         ]
-    result_fitnesses = []
+    result_objective_values = []
     genotypes = []
     for future in futures:
 
-        fitness, learn_generations = future.result()
-        result_fitnesses.append(fitness)
+        objective_value, learn_generations = future.result()
+        result_objective_values.append(objective_value)
         genotypes.append(learn_generations[0].genotype)
 
         for learn_generation in learn_generations:
             with Session(dbengine, expire_on_commit=False) as session:
                 session.add(learn_generation)
                 session.commit()
-    return result_fitnesses, genotypes
+    return result_objective_values, genotypes
 
 
 def learn_genotype(genotype, evaluator, rng):
@@ -410,7 +409,7 @@ def learn_genotype(genotype, evaluator, rng):
     optimizer.set_gp_params(alpha=config.ALPHA, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds=(config.LENGTH_SCALE - 0.01, config.LENGTH_SCALE + 0.01)))
     utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
 
-    best_fitness = None
+    best_objective_value = None
     best_learn_genotype = None
     learn_generations = []
     # lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 4 * len(brain_uuids), rng)
@@ -465,21 +464,21 @@ def learn_genotype(genotype, evaluator, rng):
 
         # Evaluate them.
         start_time = time.time()
-        fitness = evaluator.evaluate(robot)
+        objective_value = evaluator.evaluate(robot)
         end_time = time.time()
         new_learn_genotype.execution_time = end_time - start_time
 
-        if best_fitness is None or fitness >= best_fitness:
-            best_fitness = fitness
+        if best_objective_value is None or objective_value >= best_objective_value:
+            best_objective_value = objective_value
             best_learn_genotype = new_learn_genotype
             best_point = next_point
 
-        optimizer.register(params=next_point, target=fitness)
+        optimizer.register(params=next_point, target=objective_value)
 
         # From the samples and fitnesses, create a population that we can save.
         population = LearnPopulation(
             individuals=[
-                LearnIndividual(genotype=new_learn_genotype, fitness=fitness)
+                LearnIndividual(genotype=new_learn_genotype, fitness=objective_value)
             ]
         )
         # Make it all into a generation and save it to the database.
@@ -495,7 +494,7 @@ def learn_genotype(genotype, evaluator, rng):
             genotype.brain[key] = value
         genotype.brain = {k: v for k, v in sorted(genotype.brain.items())}
 
-    return best_fitness, learn_generations
+    return best_objective_value, learn_generations
 
 
 def read_args():
