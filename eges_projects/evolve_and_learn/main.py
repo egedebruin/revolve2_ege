@@ -27,6 +27,7 @@ from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
 from revolve2.experimentation.optimization.ea import population_management, selection
 from revolve2.experimentation.rng import make_rng, seed_from_time
+from revolve2.modular_robot.body.base import ActiveHinge
 
 
 def latin_hypercube(n, k, rng: np.random.Generator):
@@ -379,7 +380,11 @@ def learn_population(genotypes, evaluator, dbengine, rng):
 
 
 def learn_genotype(genotype, evaluator, rng):
-    brain_uuids = genotype.body.check_for_brains()
+    developed_body = genotype.develop_body()
+    brain_uuids = set()
+    for active_hinge in developed_body.find_modules_of_type(ActiveHinge):
+        brain_uuids.add(active_hinge.map_uuid)
+    brain_uuids = list(brain_uuids)
 
     if len(brain_uuids) == 0:
         empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
@@ -461,7 +466,7 @@ def learn_genotype(genotype, evaluator, rng):
                     # next_point['sensor_phase_offset_' + str(brain_uuid)]
                 ]
             )
-        robot = new_learn_genotype.develop()
+        robot = new_learn_genotype.develop(developed_body)
 
         # Evaluate them.
         start_time = time.time()

@@ -18,12 +18,11 @@ class LearnGenotype(Base, HasId, BrainGenotype, BodyGenotypeDirect):
     __tablename__ = "learn_genotype"
     execution_time: orm.Mapped[float] = orm.mapped_column(default=0.0)
 
-    def develop(self) -> ModularRobot:
+    def develop(self, body) -> ModularRobot:
         """
         Develop the genotype into a modular robot.
 
         :returns: The created robot.
         """
-        body = self.develop_body()
         brain = self.develop_brain(body)
         return ModularRobot(body=body, brain=brain)
