@@ -25,7 +25,7 @@ def main() -> None:
         select(
             Experiment.id.label("experiment_id"),
             Generation.generation_index,
-            Individual.fitness,
+            Individual.objective_value.label("fitness"),
         )
         .join_from(Experiment, Generation, Experiment.id == Generation.experiment_id)
         .join_from(Generation, Population, Generation.population_id == Population.id)

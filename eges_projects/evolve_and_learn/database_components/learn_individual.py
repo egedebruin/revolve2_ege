@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from sqlalchemy import orm
+
 from .base import Base
 from .learn_genotype import LearnGenotype
 
@@ -15,3 +17,4 @@ class LearnIndividual(
     """An individual in a population."""
 
     __tablename__ = "learn_individual"
+    objective_value: orm.Mapped[float] = orm.mapped_column(nullable=False)

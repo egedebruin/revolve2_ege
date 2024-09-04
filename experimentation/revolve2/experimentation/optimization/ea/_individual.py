@@ -39,7 +39,7 @@ class Individual(HasId, orm.MappedAsDataclass, Generic[TGenotype]):
         )
         genotype_id: orm.Mapped[int] = orm.mapped_column(nullable=False, init=False)
         genotype: orm.Mapped[TGenotype] = orm.relationship()
-        fitness: orm.Mapped[float] = orm.mapped_column(nullable=False)
+        fitness: orm.Mapped[float] = orm.mapped_column(nullable=False, default=0.0)
 
     # ----------------------
     # Implementation details
@@ -120,4 +120,4 @@ class Individual(HasId, orm.MappedAsDataclass, Generic[TGenotype]):
 
     @classmethod
     def __fitness_impl(cls) -> orm.Mapped[float]:
-        return orm.mapped_column(nullable=False)
+        return orm.mapped_column(nullable=False, default=0.0)

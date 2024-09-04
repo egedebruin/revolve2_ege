@@ -5,13 +5,13 @@ import time
 from argparse import ArgumentParser
 
 import numpy as np
-import numpy.typing as npt
 from bayes_opt import BayesianOptimization, UtilityFunction
 from sklearn.gaussian_process.kernels import Matern
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 import config
+import selection
 from database_components.base import Base
 from database_components.experiment import Experiment
 from database_components.generation import Generation
@@ -25,7 +25,6 @@ from database_components.population import Population
 from evaluator import Evaluator
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
-from revolve2.experimentation.optimization.ea import population_management, selection
 from revolve2.experimentation.rng import make_rng, seed_from_time
 from revolve2.modular_robot.body.base import ActiveHinge
 
@@ -56,172 +55,6 @@ def latin_hypercube(n, k, rng: np.random.Generator):
             samples[perms[i][j], i] = rng.uniform(interval[j], interval[j+1])
 
     return samples
-
-
-def select_parents(
-        rng: np.random.Generator,
-        population: Population,
-        offspring_size: int,
-) -> npt.NDArray[np.float_]:
-    """
-    Select pairs of parents using a tournament.
-
-    :param rng: Random number generator.
-    :param population: The population to select from.
-    :param offspring_size: The number of parent pairs to select.
-    :returns: Pairs of indices of selected parents. offspring_size x 2 ints.
-    """
-    return np.array(
-        [
-            selection.multiple_unique(
-                2,
-                [individual.genotype for individual in population.individuals],
-                [individual.fitness for individual in population.individuals],
-                lambda _, fitnesses: selection.tournament(rng, fitnesses, k=4),
-            )
-            for _ in range(int(offspring_size))
-        ],
-    )
-
-
-def select_parent(
-        rng: np.random.Generator,
-        population: Population,
-        offspring_size: int,
-) -> npt.NDArray[np.float_]:
-    """
-    Select pairs of parents using a tournament.
-
-    :param rng: Random number generator.
-    :param population: The population to select from.
-    :param offspring_size: The number of parent pairs to select.
-    :returns: Pairs of indices of selected parents. offspring_size x 2 ints.
-    """
-    return np.array(
-        [
-            selection.multiple_unique(
-                1,
-                [individual.genotype for individual in population.individuals],
-                [individual.fitness for individual in population.individuals],
-                lambda _, fitnesses: selection.tournament(rng, fitnesses, k=4),
-            )
-            for _ in range(int(offspring_size))
-        ],
-    )
-
-
-def select_survivors_newest(original_population: Population, offspring_population: Population) -> Population:
-    original_individuals = []
-    for individual in original_population.individuals:
-        original_individuals.append((individual.genotype, individual.original_generation, individual.fitness))
-    original_individuals = sorted(original_individuals, key=lambda x: (-x[1], -x[2]))
-    original_survivors = original_individuals[:config.POPULATION_SIZE - config.OFFSPRING_SIZE]
-
-    return Population(
-        individuals=[
-                        Individual(
-                            genotype=genotype,
-                            fitness=fitness,
-                            original_generation=original_generation
-                        )
-                        for (genotype, original_generation, fitness) in original_survivors
-                    ] +
-                    offspring_population.individuals
-    )
-
-
-def select_survivors_tournament(
-    rng: np.random.Generator,
-    original_population: Population,
-    offspring_population: Population,
-) -> Population:
-    """
-    Select survivors using a tournament.
-
-    :param rng: Random number generator.
-    :param original_population: The population the parents come from.
-    :param offspring_population: The offspring.
-    :returns: A newly created population.
-    """
-    original_survivors, offspring_survivors = population_management.steady_state(
-        [i.genotype for i in original_population.individuals],
-        [i.fitness for i in original_population.individuals],
-        [i.genotype for i in offspring_population.individuals],
-        [i.fitness for i in offspring_population.individuals],
-        lambda n, genotypes, fitnesses: selection.multiple_unique(
-            n,
-            genotypes,
-            fitnesses,
-            lambda _, fitnesses: selection.tournament(rng, fitnesses, k=4),
-        ),
-    )
-
-    return Population(
-        individuals=[
-            Individual(
-                genotype=original_population.individuals[i].genotype,
-                fitness=original_population.individuals[i].fitness,
-                original_generation=original_population.individuals[i].original_generation
-            )
-            for i in original_survivors
-        ]
-        + [
-            Individual(
-                genotype=offspring_population.individuals[i].genotype,
-                fitness=offspring_population.individuals[i].fitness,
-                original_generation=original_population.individuals[i].original_generation
-            )
-            for i in offspring_survivors
-        ]
-    )
-
-
-def select_survivors_best(
-    original_population: Population,
-    offspring_population: Population,
-) -> Population:
-    """
-    Select survivors using a tournament.
-
-    :param rng: Random number generator.
-    :param original_population: The population the parents come from.
-    :param offspring_population: The offspring.
-    :returns: A newly created population.
-    """
-    individuals = []
-    for individual in original_population.individuals:
-        individuals.append((individual.genotype, individual.fitness, individual.original_generation))
-    for individual in offspring_population.individuals:
-        individuals.append((individual.genotype, individual.fitness, individual.original_generation))
-    individuals = sorted(individuals, key=lambda x: (-x[1]))
-    survivors = individuals[:config.POPULATION_SIZE]
-
-    return Population(
-        individuals=[
-                        Individual(
-                            genotype=genotype,
-                            fitness=fitness,
-                            original_generation=original_generation
-                        )
-                        for (genotype, fitness, original_generation) in survivors
-                    ]
-    )
-
-
-def find_best_robot(
-        current_best: Individual | None, population: list[Individual]
-) -> Individual:
-    """
-    Return the best robot between the population and the current best individual.
-
-    :param current_best: The current best individual.
-    :param population: The population.
-    :returns: The best individual.
-    """
-    return max(
-        population + [] if current_best is None else [current_best],
-        key=lambda x: x.fitness,
-    )
 
 
 def run_experiment(dbengine: Engine) -> None:
@@ -260,16 +93,17 @@ def run_experiment(dbengine: Engine) -> None:
     # Evaluate the initial population.
     logging.info("Evaluating initial population.")
 
-    initial_fitnesses, initial_genotypes = learn_population(genotypes=initial_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
+    initial_objective_values, initial_genotypes = learn_population(genotypes=initial_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
 
     # Create a population of individuals, combining genotype with fitness.
     individuals = []
-    for genotype, fitness in zip(initial_genotypes, initial_fitnesses):
-        individual = Individual(genotype=genotype, fitness=fitness, original_generation=0)
+    for genotype, objective_value in zip(initial_genotypes, initial_objective_values):
+        individual = Individual(genotype=genotype, objective_value=objective_value, original_generation=0)
         individuals.append(individual)
     population = Population(
         individuals=individuals
     )
+    selection.calculate_reproduction_fitness(population)
     generation = Generation(
         experiment=experiment, generation_index=0, population=population
     )
@@ -285,65 +119,23 @@ def run_experiment(dbengine: Engine) -> None:
             f"Real generation {generation.generation_index + 1} / {config.NUM_GENERATIONS}."
         )
 
-        if config.CROSSOVER:
-            parents = select_parents(rng, population, config.OFFSPRING_SIZE / 2)
-            # Create offspring. Two offspring per pair of parents, with a copy of one of its parents' distribution
-            offspring_genotypes = []
-            for parent1_i, parent2_i in parents:
-                child_genotype_1, child_genotype_2 = Genotype.crossover(
-                    population.individuals[parent1_i].genotype,
-                    population.individuals[parent2_i].genotype,
-                    rng,
-                )
-                new_genotype_1 = child_genotype_1.mutate(rng)
-                new_genotype_2 = child_genotype_2.mutate(rng)
-                new_genotype_1.parent_1_genotype_id = population.individuals[parent1_i].genotype.id
-                new_genotype_1.parent_2_genotype_id = population.individuals[parent2_i].genotype.id
-                new_genotype_2.parent_1_genotype_id = population.individuals[parent1_i].genotype.id
-                new_genotype_2.parent_2_genotype_id = population.individuals[parent2_i].genotype.id
-
-                offspring_genotypes.append(new_genotype_1)
-                offspring_genotypes.append(new_genotype_2)
-        else:
-            parents = select_parent(rng, population, config.OFFSPRING_SIZE)
-            offspring_genotypes = []
-            for [parent_i] in parents:
-                child_genotype = population.individuals[parent_i].genotype.mutate(rng)
-                child_genotype.parent_1_genotype_id = population.individuals[parent_i].genotype.id
-                offspring_genotypes.append(child_genotype)
+        offspring_genotypes = selection.generate_offspring(rng, population)
 
         # Evaluate the offspring.
-        offspring_fitnesses, offspring_genotypes = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
+        offspring_objective_values, offspring_genotypes = learn_population(genotypes=offspring_genotypes, evaluator=evaluator, dbengine=dbengine, rng=rng)
 
         # Make an intermediate offspring population.
         offspring_individuals = [
-            Individual(genotype=genotype, fitness=fitness, original_generation=generation.generation_index + 1) for
-            genotype, fitness in zip(offspring_genotypes, offspring_fitnesses)]
+            Individual(genotype=genotype, objective_value=objective_value, original_generation=generation.generation_index + 1) for
+            genotype, objective_value in zip(offspring_genotypes, offspring_objective_values)]
+        offspring_population = Population(
+                individuals=offspring_individuals
+            )
         # Create the next population by selecting survivors.
-        if config.SELECT_STRATEGY == 'newest':
-            population = select_survivors_newest(
-                population,
-                Population(
-                    individuals=offspring_individuals
-                ),
-            )
-        elif config.SELECT_STRATEGY == 'tournament':
-            population = select_survivors_tournament(
-                rng,
-                population,
-                Population(
-                    individuals=offspring_individuals
-                ),
-            )
-        elif config.SELECT_STRATEGY == 'best':
-            population = select_survivors_best(
-                population,
-                Population(
-                    individuals=offspring_individuals
-                ),
-            )
-        else:
-            raise Exception("Unrecognized SELECT_STRATEGY")
+        selection.calculate_survival_fitness(population, offspring_population)
+        population = selection.select_survivors(rng, population, offspring_population)
+        selection.calculate_reproduction_fitness(population)
+
         # Make it all into a generation and save it to the database.
         generation = Generation(
             experiment=experiment,
@@ -364,19 +156,19 @@ def learn_population(genotypes, evaluator, dbengine, rng):
             executor.submit(learn_genotype, genotype, evaluator, rng)
             for genotype in genotypes
         ]
-    result_fitnesses = []
+    result_objective_values = []
     genotypes = []
     for future in futures:
 
-        fitness, learn_generations = future.result()
-        result_fitnesses.append(fitness)
+        objective_value, learn_generations = future.result()
+        result_objective_values.append(objective_value)
         genotypes.append(learn_generations[0].genotype)
 
         for learn_generation in learn_generations:
             with Session(dbengine, expire_on_commit=False) as session:
                 session.add(learn_generation)
                 session.commit()
-    return result_fitnesses, genotypes
+    return result_objective_values, genotypes
 
 
 def learn_genotype(genotype, evaluator, rng):
@@ -390,7 +182,7 @@ def learn_genotype(genotype, evaluator, rng):
         empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
         population = LearnPopulation(
             individuals=[
-                LearnIndividual(genotype=empty_learn_genotype, fitness=0)
+                LearnIndividual(genotype=empty_learn_genotype, objective_value=0)
             ]
         )
         return 0, [LearnGeneration(
@@ -415,7 +207,7 @@ def learn_genotype(genotype, evaluator, rng):
     optimizer.set_gp_params(alpha=config.ALPHA, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds=(config.LENGTH_SCALE - 0.01, config.LENGTH_SCALE + 0.01)))
     utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
 
-    best_fitness = None
+    best_objective_value = None
     best_learn_genotype = None
     learn_generations = []
     # lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 4 * len(brain_uuids), rng)
@@ -470,21 +262,21 @@ def learn_genotype(genotype, evaluator, rng):
 
         # Evaluate them.
         start_time = time.time()
-        fitness = evaluator.evaluate(robot)
+        objective_value = evaluator.evaluate(robot)
         end_time = time.time()
         new_learn_genotype.execution_time = end_time - start_time
 
-        if best_fitness is None or fitness >= best_fitness:
-            best_fitness = fitness
+        if best_objective_value is None or objective_value >= best_objective_value:
+            best_objective_value = objective_value
             best_learn_genotype = new_learn_genotype
             best_point = next_point
 
-        optimizer.register(params=next_point, target=fitness)
+        optimizer.register(params=next_point, target=objective_value)
 
         # From the samples and fitnesses, create a population that we can save.
         population = LearnPopulation(
             individuals=[
-                LearnIndividual(genotype=new_learn_genotype, fitness=fitness)
+                LearnIndividual(genotype=new_learn_genotype, objective_value=objective_value)
             ]
         )
         # Make it all into a generation and save it to the database.
@@ -500,7 +292,7 @@ def learn_genotype(genotype, evaluator, rng):
             genotype.brain[key] = value
         genotype.brain = {k: v for k, v in sorted(genotype.brain.items())}
 
-    return best_fitness, learn_generations
+    return best_objective_value, learn_generations
 
 
 def read_args():
@@ -511,7 +303,8 @@ def read_args():
     parser.add_argument("--environment", required=True)
     parser.add_argument("--repetition", required=True)
     parser.add_argument("--evosearch", required=True)
-    parser.add_argument("--select", required=True)
+    parser.add_argument("--survivorselect", required=True)
+    parser.add_argument("--parentselect", required=True)
     args = parser.parse_args()
     if args.evosearch == '1':
         config.NUM_RANDOM_SAMPLES = 1
@@ -523,11 +316,12 @@ def read_args():
     config.CONTROLLERS = int(args.controllers)
     config.ENVIRONMENT = args.environment
     config.EVOLUTIONARY_SEARCH = args.evosearch == '1'
-    config.SELECT_STRATEGY = args.select
+    config.SURVIVOR_SELECT_STRATEGY = args.survivorselect
+    config.PARENT_SELECT_STRATEGY = args.parentselect
     controllers_string = 'adaptable' if config.CONTROLLERS == -1 else config.CONTROLLERS
     config.DATABASE_FILE = ("learn-" + str(args.learn) + "_evosearch-" + args.evosearch + "_controllers-" +
-                            str(controllers_string) + "_select-" + args.select + "_environment-" + args.environment +
-                            "_" + str(args.repetition) + ".sqlite")
+                            str(controllers_string) + "_survivorselect-" + args.survivorselect + "_parentselect-" +
+                            args.parentselect + "_environment-" + args.environment + "_" + str(args.repetition) + ".sqlite")
 
 
 def main() -> None:
