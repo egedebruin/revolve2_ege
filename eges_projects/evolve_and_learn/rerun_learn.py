@@ -43,7 +43,7 @@ def main() -> None:
 
         genotype = row[0]
         fitness = row[1]
-    modular_robot = genotype.develop()
+    modular_robot = genotype.develop(genotype.develop_body())
 
     print(f"Best fitness: {fitness}")
     print(len(genotype.brain))
