@@ -28,7 +28,7 @@ def main() -> None:
 
     with Session(dbengine) as ses:
         row = ses.execute(
-            select(LearnGenotype, LearnIndividual.fitness)
+            select(LearnGenotype, LearnIndividual.objective_value)
             .join_from(LearnGenotype, LearnIndividual, LearnGenotype.id == LearnIndividual.genotype_id)
             .join_from(LearnIndividual, LearnPopulation, LearnIndividual.population_id == LearnPopulation.id)
             .join_from(LearnPopulation, LearnGeneration, LearnPopulation.id == LearnGeneration.learn_population_id)
@@ -36,7 +36,7 @@ def main() -> None:
             .join_from(Genotype, Individual, Individual.genotype_id == Genotype.id)
             .join_from(Individual, Population, Population.id == Individual.population_id)
             .join_from(Population, Generation, Generation.population_id == Population.id)
-            .order_by(LearnIndividual.fitness.desc())
+            .order_by(LearnIndividual.objective_value.desc())
             .limit(1)
         ).one()
         assert row is not None
