@@ -213,7 +213,7 @@ def generate_offspring(rng, population):
     }
     select_function = parent_selection_strategies.get(config.PARENT_SELECT_STRATEGY)
     if select_function is None:
-        raise ValueError(f"Unrecognized SURVIVOR_SELECT_STRATEGY: {config.PARENT_SELECT_STRATEGY}")
+        raise ValueError(f"Unrecognized PARENT_SELECT_STRATEGY: {config.PARENT_SELECT_STRATEGY}")
 
     parents = select_function()
     offspring_genotypes = []

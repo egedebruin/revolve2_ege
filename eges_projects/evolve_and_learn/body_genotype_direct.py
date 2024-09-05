@@ -115,6 +115,28 @@ class ModuleGenotype:
                 return 0
         return index
 
+    def add_random_module_to_block(self, index: int, rng: np.random.Generator, brain: BrainGenotype):
+        if index == 1:
+            connection_choice = rng.choice(np.array(self.possible_children, dtype=object))
+            module_to_add = self.choose_random_module(rng, brain)
+            existing_module = None
+            if tuple(connection_choice) in list(self.children.keys()):
+                existing_module = self.children[tuple(connection_choice)]
+            self.children[tuple(connection_choice)] = module_to_add
+
+            if existing_module is not None:
+                if isinstance(module_to_add, HingeGenotype):
+                    module_to_add.children[tuple(['attachment'])] = existing_module
+                if isinstance(module_to_add, BrickGenotype):
+                    module_to_add.children[tuple(['front'])] = existing_module
+
+            return 0
+        for module in self.children.values():
+            index = module.add_random_module_to_block(index - 1, rng, brain)
+            if index == 0:
+                return 0
+        return index
+
     def get_amount_possible_connections(self):
         possible_connections = 0
         for directions in self.possible_children:
@@ -260,7 +282,7 @@ class CoreGenotype(ModuleGenotype):
     possible_children = [['left'], ['right'], ['front', 'back']]
     type = 'core'
     rotation = 0.0
-    possible_phase_differences = [math.pi]
+    possible_phase_differences = [0, math.pi]
     reverse_phase = 0
 
     def get_amount_nodes(self):
@@ -386,33 +408,41 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
         return BodyGenotypeDirect(body)
 
     def mutate_body(self, rng: np.random.Generator, brain: BrainGenotype):
-        body = copy.deepcopy(self.body)
-        mutation_chooser = rng.random()
+        body = None
+        mutation_chooser = 0
+        mutation_accepted = False
+        while not mutation_accepted:
+            body = copy.deepcopy(self.body)
+            mutation_chooser = rng.random()
 
-        if mutation_chooser < 0.5:
-            for _ in range(rng.integers(1, config.MAX_ADD_MODULES + 1)):
-                amount_possible_connections = body.get_amount_possible_connections()
-                connection_to_add = rng.integers(1, amount_possible_connections + 1)
-                body.add_random_module_to_connection(connection_to_add, rng, brain)
-        elif mutation_chooser <= 1:
-            for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
-                amount_nodes = body.get_amount_nodes()
-                if amount_nodes == 0:
-                    break
-                node_to_remove = rng.integers(1, amount_nodes + 1)
-                body.remove_node(node_to_remove)
+            if mutation_chooser < 0.33:
+                for _ in range(rng.integers(1, config.MAX_ADD_MODULES) + 1):
+                    amount_nodes = body.get_amount_nodes() + 1
+                    node_to_add = rng.integers(1, amount_nodes + 1)
+                    body.add_random_module_to_block(node_to_add, rng, brain)
+                mutation_accepted = body.get_amount_modules() < config.MAX_NUMBER_OF_MODULES * 1.25
+            elif mutation_chooser <= 0.66:
+                for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
+                    amount_nodes = body.get_amount_nodes()
+                    if amount_nodes == 0:
+                        break
+                    node_to_remove = rng.integers(1, amount_nodes + 1)
+                    body.remove_node(node_to_remove)
 
-            if config.CONTROLLERS == -1:
-                used_brains = body.check_for_brains()
-                brain.remove_unused(used_brains, rng)
-        elif mutation_chooser <= 2:
-            body.reverse_phase = rng.choice(body.possible_phase_differences)
-        else:
-            body.switch_brain(rng, brain)
+                if config.CONTROLLERS == -1:
+                    used_brains = body.check_for_brains()
+                    brain.remove_unused(used_brains, rng)
+                mutation_accepted = True
+            elif mutation_chooser <= 1:
+                body.reverse_phase = rng.choice(body.possible_phase_differences)
+                mutation_accepted = True
+            else:
+                body.switch_brain(rng, brain)
 
-            if config.CONTROLLERS == -1:
-                used_brains = body.check_for_brains()
-                brain.remove_unused(used_brains, rng)
+                if config.CONTROLLERS == -1:
+                    used_brains = body.check_for_brains()
+                    brain.remove_unused(used_brains, rng)
+                mutation_accepted = False
         return BodyGenotypeDirect(body), mutation_chooser
 
     def get_brain_uuids(self):
