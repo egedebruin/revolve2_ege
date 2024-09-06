@@ -2,9 +2,9 @@
 
 import sqlalchemy
 import sqlalchemy.orm as orm
-from .base import Base
-from .genotype import Genotype
-from .learn_population import LearnPopulation
+from database_components.base import Base
+from database_components.genotype import Genotype
+from database_components.learn_population import LearnPopulation
 
 from revolve2.experimentation.database import HasId
 

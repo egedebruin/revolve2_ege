@@ -9,8 +9,8 @@ import sqlalchemy.orm as orm
 from .base import Base
 
 import config
-from body_genotype_direct import BodyGenotypeDirect
-from brain_genotype_simple import BrainGenotype
+from genotypes.body_genotype_direct import BodyGenotypeDirect
+from genotypes.brain_genotype_simple import BrainGenotype
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot
 

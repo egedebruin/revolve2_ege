@@ -4,8 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import uuid
 
-from learn_individual import LearnIndividual
-from learn_genotype import LearnGenotype
+from database_components.learn_individual import LearnIndividual
+from database_components.learn_genotype import LearnGenotype
 
 import pandas
 

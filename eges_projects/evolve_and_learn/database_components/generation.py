@@ -2,9 +2,9 @@
 
 import sqlalchemy
 import sqlalchemy.orm as orm
-from .base import Base
-from .experiment import Experiment
-from .population import Population
+from database_components.base import Base
+from database_components.experiment import Experiment
+from database_components.population import Population
 
 from revolve2.experimentation.database import HasId
 

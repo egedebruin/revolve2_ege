@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 
-folder = "results/3008"
+folder = "./results/0209"
 
 def get_df(learn, evosearch, controllers, environment, survivor_select):
     database_name = f"learn-{learn}_evosearch-{evosearch}_controllers-{controllers}_select-{survivor_select}_environment-{environment}"
@@ -77,25 +77,25 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, evosearch,
     ]
 
     learn_to_color = {
-        '10': 'green',
-        '11': 'purple',
-        '301': 'blue',
-        '501': 'red',
+        '1': 'purple',
+        '30': 'blue',
+        '50': 'red',
+        '100': 'green',
     }
 
     learn_to_label = {
-        '11': 'Learn budget: 1',
-        '10': 'Learn budget: 1',
-        '301': 'Learn budget: 30',
-        '501': 'Learn budget: 50',
+        '1': 'Learn budget: 1',
+        '30': 'Learn budget: 30',
+        '50': 'Learn budget: 50',
+        '100': 'Learn budget: 100',
     }
 
     ax_thingy.plot(
         agg_per_generation[x_axis],
         agg_per_generation[max_or_mean + "_fitness_mean"],
         linewidth=2,
-        color=learn_to_color[learn+evosearch],
-        label=learn_to_label[learn+evosearch]
+        color=learn_to_color[learn],
+        label=learn_to_label[learn]
     )
     ax_thingy.fill_between(
         agg_per_generation[x_axis],
@@ -104,12 +104,12 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, evosearch,
         agg_per_generation[max_or_mean + "_fitness_mean"]
         + agg_per_generation[max_or_mean + "_fitness_std"],
         alpha=0.1,
-        color=learn_to_color[learn+evosearch],
+        color=learn_to_color[learn],
     )
 
     #ax_thingy.set_ylim(0, 25)
     if x_axis == "function_evaluations":
-        ax_thingy.set_xlim(0, 200000)
+        ax_thingy.set_xlim(0, 400000)
     else:
         ax_thingy.set_xlim(0, 135)
 
@@ -117,8 +117,8 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, evosearch,
 def main() -> None:
     fig, ax = plt.subplots(nrows=3, ncols=2, sharex='col', sharey='row')
     for i, x_axis in enumerate(["morphologies", "function_evaluations"]):
-        for (learn, evosearch) in [('1', '1'), ('30', '1')]:
-            for j, environment in enumerate(['flat', 'noisy', 'steps']):
+        for (learn, evosearch) in [('1', '1'), ('50', '1'), ('100', '1')]:
+            for j, environment in enumerate(['flat', 'steps']):
                 plot_database(ax[j][i], x_axis, learn, environment, 'adaptable', evosearch, "tournament")
                 if j == 3:
                     ax[j][i].set_xlabel(x_axis.replace("_", " ").title())
@@ -126,8 +126,8 @@ def main() -> None:
     ax[0][1].legend(loc='upper left', fontsize=10)
 
     fig.text(0.04, 0.5, 'Fitness', va='center', rotation='vertical', fontsize=16)
-    fig.text(0.08, 0.25, 'Environment: Steps', va='center', rotation='vertical', fontsize=16)
-    fig.text(0.08, 0.5, 'Environment: Noisy', va='center', rotation='vertical', fontsize=14)
+    fig.text(0.08, 0.25, 'Environment: Noisy', va='center', rotation='vertical', fontsize=14)
+    fig.text(0.08, 0.5, 'Environment: Steps', va='center', rotation='vertical', fontsize=14)
     fig.text(0.08, 0.75, 'Environment: Flat', va='center', rotation='vertical', fontsize=14)
 
     plt.subplots_adjust(wspace=0.1, hspace=0.1)

@@ -1,10 +1,10 @@
 import os
 
-from experiment import Experiment
-from generation import Generation
-from individual import Individual
-from genotype import Genotype
-from population import Population
+from database_components.experiment import Experiment
+from database_components.generation import Generation
+from database_components.individual import Individual
+from database_components.genotype import Genotype
+from database_components.population import Population
 
 import pandas
 import matplotlib.pyplot as plt

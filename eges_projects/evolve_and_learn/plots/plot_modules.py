@@ -4,7 +4,7 @@ import os
 from revolve2.experimentation.database import open_database_sqlite, OpenMethod
 from sqlalchemy import select
 
-from body_genotype_direct import CoreGenotype
+from genotypes.body_genotype_direct import CoreGenotype
 from database_components.experiment import Experiment
 from database_components.generation import Generation
 from database_components.genotype import Genotype

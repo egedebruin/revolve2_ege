@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from .base import Base
-from brain_genotype_simple import BrainGenotype
-from body_genotype_direct import BodyGenotypeDirect
+from database_components.base import Base
+from genotypes.brain_genotype_simple import BrainGenotype
+from genotypes.body_genotype_direct import BodyGenotypeDirect
 
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot

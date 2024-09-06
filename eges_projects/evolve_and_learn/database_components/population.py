@@ -1,7 +1,7 @@
 """Population class."""
 
-from .base import Base
-from .individual import Individual
+from database_components.base import Base
+from database_components.individual import Individual
 
 from revolve2.experimentation.optimization.ea import Population as GenericPopulation
 
