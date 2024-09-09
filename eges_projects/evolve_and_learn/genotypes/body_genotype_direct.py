@@ -9,6 +9,7 @@ import json
 from sqlalchemy import event
 from sqlalchemy.engine import Connection
 
+from genotypes.body_genotype import BodyGenotype
 from genotypes.brain_genotype_simple import BrainGenotype
 import config
 from revolve2.modular_robot.body import RightAngles
@@ -382,7 +383,7 @@ class HingeGenotype(ModuleGenotype):
         return nodes
 
 
-class BodyGenotypeDirect(orm.MappedAsDataclass):
+class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
     """SQLAlchemy model for a direct encoding body genotype."""
 
     body: CoreGenotype
@@ -407,7 +408,7 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
 
         return BodyGenotypeDirect(body)
 
-    def mutate_body(self, rng: np.random.Generator, brain: BrainGenotype):
+    def mutate_body_start(self, rng: np.random.Generator, brain: BrainGenotype):
         body = None
         mutation_chooser = 0
         mutation_accepted = False

@@ -147,8 +147,8 @@ def select_survivors_tournament(
             Individual(
                 genotype=offspring_population.individuals[i].genotype,
                 fitness=offspring_population.individuals[i].fitness,
-                objective_value=original_population.individuals[i].objective_value,
-                original_generation=original_population.individuals[i].original_generation
+                objective_value=offspring_population.individuals[i].objective_value,
+                original_generation=offspring_population.individuals[i].original_generation
             )
             for i in offspring_survivors
         ]

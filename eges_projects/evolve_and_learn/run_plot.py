@@ -6,4 +6,4 @@ import plots.plot_mutation as plot_mutation
 import plots.plot_first_parent as plot_first_parent
 import plots.plot_tree_edit_distance as plot_tree_edit_distance
 
-plot_learn.main()
+plot_tree_edit_distance.main()

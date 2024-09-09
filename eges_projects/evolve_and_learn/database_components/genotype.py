@@ -10,9 +10,10 @@ from .base import Base
 
 import config
 from genotypes.body_genotype_direct import BodyGenotypeDirect
+from genotypes.body_genotype_cppn import BodyGenotypeCppn
 from genotypes.brain_genotype_simple import BrainGenotype
+from genotypes.brain_genotype_cppn_simple import BrainGenotype as BrainGenotypeCppn
 from revolve2.experimentation.database import HasId
-from revolve2.modular_robot import ModularRobot
 
 
 class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
@@ -56,7 +57,7 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
         :returns: A mutated copy of the provided genotype.
         """
         brain = self.mutate_brain(rng)
-        body, mutation_parameter = self.mutate_body(rng, brain)
+        body, mutation_parameter = self.mutate_body_start(rng, brain)
 
         genotype = Genotype(body=body.body, brain=brain.brain)
         genotype.mutation_parameter = mutation_parameter
@@ -96,13 +97,3 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
             child_2_brain = {new_uuid: np.array(rng.random(4))}
 
         return Genotype(body=child1_body.body, brain=child_1_brain), Genotype(body=child2_body.body, brain=child_2_brain)
-
-    def develop(self) -> ModularRobot:
-        """
-        Develop the genotype into a modular robot.
-
-        :returns: The created robot.
-        """
-        body = self.develop_body()
-        brain = self.develop_brain(body)
-        return ModularRobot(body=body, brain=brain)

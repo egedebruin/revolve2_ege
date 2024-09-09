@@ -13,9 +13,9 @@ class ActiveHinge(Module):
     """An Active Hinge Module."""
 
     ATTACHMENT = 0
+    _reverse_phase = 0.0
 
     _map_uuid: UUID
-    _reverse_phase: float
 
     _range: float
     _effort: float

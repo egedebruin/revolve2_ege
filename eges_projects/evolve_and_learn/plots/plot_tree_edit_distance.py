@@ -14,89 +14,6 @@ from sqlalchemy import select
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 
 
-def fast_non_dominated_sort(population):
-    """
-    Perform non-dominated sorting on the population.
-    """
-    S = [[] for _ in range(len(population))]
-    front = [[]]
-    n = [0] * len(population)
-    rank = [0] * len(population)
-
-    for p in range(len(population)):
-        for q in range(len(population)):
-            if dominates(population[p], population[q]):
-                S[p].append(q)
-            elif dominates(population[q], population[p]):
-                n[p] += 1
-        if n[p] == 0:
-            rank[p] = 0
-            front[0].append(p)
-
-    i = 0
-    while front[i]:
-        next_front = []
-        for p in front[i]:
-            for q in S[p]:
-                n[q] -= 1
-                if n[q] == 0:
-                    rank[q] = i + 1
-                    next_front.append(q)
-        i += 1
-        front.append(next_front)
-
-    del front[-1]  # Remove the last empty front
-    return front, rank
-
-
-def dominates(individual1, individual2):
-    """
-    Returns True if individual1 dominates individual2, False otherwise.
-    """
-    return (individual1[0] <= individual2[0] and individual1[1] <= individual2[1]) and (individual1 != individual2)
-
-
-def calculate_crowding_distance(front, population):
-    """
-    Calculate the crowding distance for each individual in a front.
-    """
-    distance = [0] * len(front)
-    if len(front) > 0:
-        for m in range(2):  # Assuming two objectives
-            sorted_front = sorted(front, key=lambda x: population[x][m])
-            distance[0] = distance[-1] = float('inf')
-            min_value = population[sorted_front[0]][m]
-            max_value = population[sorted_front[-1]][m]
-            if max_value != min_value:
-                for i in range(1, len(front) - 1):
-                    distance[i] += (population[sorted_front[i + 1]][m] - population[sorted_front[i - 1]][m]) / (
-                                max_value - min_value)
-    return distance
-
-
-def nsga_ii_selection(population, num_to_select=10):
-    """
-    Select individuals based on NSGA-II algorithm.
-
-    :param population: A list of individuals where each individual is a list/tuple of two objective values.
-    :param num_to_select: The number of individuals to select.
-    :return: A list of selected individuals.
-    """
-    fronts, _ = fast_non_dominated_sort(population)
-
-    selected_individuals = []
-    for front in fronts:
-        if len(selected_individuals) + len(front) <= num_to_select:
-            selected_individuals.extend(front)
-        else:
-            crowding_distances = calculate_crowding_distance(front, population)
-            sorted_front = sorted(zip(front, crowding_distances), key=lambda x: x[1], reverse=True)
-            selected_individuals.extend(
-                [individual for individual, _ in sorted_front[:num_to_select - len(selected_individuals)]])
-            break
-
-    return selected_individuals
-
 def tree_edit_distance(tree1, tree2):
     # Base cases: one of the trees is empty
     if tree1 is None:
@@ -142,9 +59,9 @@ def size(tree):
         return 0
     return 1 + sum(size(c) for c in list(tree.children.values()))
 
-def get_all_genotypes(learn, environment):
-    folder = "results/3008"
-    database_name = f"learn-{learn}_evosearch-1_controllers-adaptable_select-tournament_environment-{environment}"
+def get_all_genotypes(learn, survivor_select):
+    folder = "results/0909"
+    database_name = f"learn-{learn}_evosearch-1_controllers-adaptable_survivorselect-{survivor_select}_parentselect-tournament_environment-noisy"
     print(database_name)
     files = [file for file in os.listdir(folder) if file.startswith(database_name)]
     if len(files) == 0:
@@ -183,15 +100,15 @@ def main():
     #     dfs.append(pd.DataFrame(future.result()))
     # pd.concat(dfs).to_csv("results/tree-edit-distance-2908.csv", index=False)
     for learn in ['1', '30']:
-        for environment in ['flat', 'noisy', 'steps']:
-            create_file_content(learn, environment)
+        for survivor_select in ['best', 'newest']:
+            create_file_content(learn, survivor_select)
 
 
 
-def create_file_content(learn, environment):
+def create_file_content(learn, survivor_select):
     result = {
         'learn': [],
-        'environment': [],
+        'survivor_select': [],
         'generation': [],
         'experiment_id': [],
         'average_tree_edit_distance': [],
@@ -199,7 +116,7 @@ def create_file_content(learn, environment):
         'max_tree_edit_distance': [],
         'max_size': [],
     }
-    df = get_all_genotypes(learn, environment)
+    df = get_all_genotypes(learn, survivor_select)
     max_generations = df['generation_index'].nunique()
     experiments = df['experiment_id'].nunique()
     for experiment_id in range(1, experiments + 1):
@@ -207,24 +124,21 @@ def create_file_content(learn, environment):
             df_experiment = df.loc[df['experiment_id'] == experiment_id]
             df_generation = df_experiment.loc[df_experiment['generation_index'] == i]
             bodies = list(df_generation['serialized_body'])
-            fitnesses = list(df_generation['fitness'])
 
+            tree_edit_distances = []
             sizes = []
-            population = []
             for j in range(len(bodies)):
-                print(j)
-                tree_edit_distances = []
                 sizes.append(size(CoreGenotype(0.0).deserialize(json.loads(bodies[j]))))
-                for k in range(len(bodies)):
+                for k in range(j + 1, len(bodies)):
                     tree_edit_distances.append(tree_edit_distance(CoreGenotype(0.0).deserialize(json.loads(bodies[j])), CoreGenotype(0.0).deserialize(json.loads(bodies[k]))))
-                sorted_indexes = sorted(range(len(tree_edit_distances)), key=lambda i: tree_edit_distances[i])[1:6]
-                local_competition_fitness = 0
-                for k in sorted_indexes:
-                    if fitnesses[j] > fitnesses[k]:
-                        local_competition_fitness += 1
-                population.append((sum(tree_edit_distances)/len(tree_edit_distances), local_competition_fitness))
-            selected_individuals = nsga_ii_selection(population)
-            print(selected_individuals)
+            result['learn'].append(learn)
+            result['survivor_select'].append(survivor_select)
+            result['generation'].append(i)
+            result['experiment_id'].append(experiment_id)
+            result['average_tree_edit_distance'].append(sum(tree_edit_distances) / len(tree_edit_distances))
+            result['average_size'].append(sum(sizes) / len(sizes))
+            result['max_tree_edit_distance'].append(max(tree_edit_distances))
+            result['max_size'].append(max(sizes))
 
     return result
 

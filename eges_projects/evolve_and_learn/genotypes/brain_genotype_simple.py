@@ -44,6 +44,9 @@ class BrainGenotype(orm.MappedAsDataclass):
 
         return BrainGenotype(brain=brain)
 
+    def update_brain_parameters(self, brain_uuids, rng):
+        pass
+
     def add_new(self, rng):
         new_uuid = uuid.uuid4()
         self.brain[new_uuid] = np.array(rng.random(2))
