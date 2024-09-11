@@ -14,6 +14,62 @@ import config
 from revolve2.modular_robot.body import RightAngles
 from revolve2.modular_robot.body.v1 import BodyV1, ActiveHingeV1, BrickV1
 
+class BodyDeveloper:
+    queue: list
+    grid: list
+    body: BodyV1
+    reverse_direction = {
+        'left': 'right',
+        'up': 'up',
+        'front': 'front',
+        'right': 'left',
+        'down': 'down',
+        'back': 'back',
+        'attachment': 'attachment'
+    }
+
+    def __init__(self, initial_module):
+        self.grid = [Vector3([0, 0, 0])]
+        self.body = BodyV1()
+
+        initial_module.body_module = self.body.core_v1
+
+        self.queue = []
+        self.queue.append((initial_module, initial_module.body_module, False))
+
+
+    def develop(self):
+        while len(self.queue) > 0:
+            current_module, current_body_module, module_mirror = self.queue.pop(0)
+            for directions, new_module in current_module.children.items():
+                direction_mirror = module_mirror
+                for direction in directions:
+                    new_body_module = new_module.get_body_module(direction_mirror)
+                    if module_mirror:
+                        direction = self.reverse_direction[direction]
+                    setattr(current_body_module, direction, new_body_module)
+
+                    grid_position = self.body.grid_position(new_body_module)
+                    if grid_position in self.grid or len(self.grid) > config.MAX_NUMBER_OF_MODULES:
+                        setattr(current_body_module, direction, None)
+                        continue
+
+                    self.grid.append(grid_position)
+
+                    self.queue.append((new_module, new_body_module, direction_mirror))
+                    direction_mirror = not direction_mirror
+
+            if isinstance(current_body_module, ActiveHingeV1):
+                BodyDeveloper.develop_hinge(current_module, current_body_module, module_mirror)
+
+    @staticmethod
+    def develop_hinge(hinge_module, hinge_body_module, mirror):
+        hinge_body_module.map_uuid = hinge_module.brain_index
+        if mirror:
+            hinge_body_module.reverse_phase = hinge_module.reverse_phase_value
+        else:
+            hinge_body_module.reverse_phase = 0
+
 
 class ModuleGenotype:
     rotation: float
@@ -41,29 +97,6 @@ class ModuleGenotype:
     def __init__(self, rotation):
         self.rotation = rotation
         self.children = {}
-
-    def develop(self, body, grid, mirror):
-        if grid is None:
-            grid = [Vector3([0, 0, 0])]
-        for directions, module in self.children.items():
-            if isinstance(directions, str):
-                directions = [directions]
-            is_mirror = mirror
-            for direction in directions:
-                new_module = module.get_body_module(is_mirror)
-                if mirror:
-                    direction = self.reverse_direction[direction]
-                setattr(self.body_module, direction, new_module)
-                module.develop(body, grid, is_mirror)
-
-                grid_position = body.grid_position(new_module)
-                if grid_position not in grid:
-                    grid.append(grid_position)
-                else:
-                    setattr(self.body_module, direction, None)
-                    continue
-
-                is_mirror = not is_mirror
 
     def get_body_module(self, reverse):
         self.temp_rotation = self.rotation
@@ -109,11 +142,19 @@ class ModuleGenotype:
 
         return nodes
 
+    def get_amount_modules(self):
+        nodes = 1
+
+        for directions, module in self.children.items():
+            nodes += module.get_amount_modules() * len(directions)
+
+        return nodes
+
     def get_amount_hinges(self):
         nodes = 0
 
-        for module in self.children.values():
-            nodes += module.get_amount_hinges()
+        for directions, module in self.children.items():
+            nodes += module.get_amount_hinges() * len(directions)
 
         return nodes
 
@@ -137,7 +178,21 @@ class ModuleGenotype:
     def remove_node(self, index):
         for direction, module in self.children.items():
             if index == 1:
-                self.children.pop(direction)
+                child = self.children.pop(direction)
+
+                for child_direction in child.children.keys():
+
+                    temp_key = list(child_direction)
+                    if self.type == 'hinge' and list(child_direction) == ['front']:
+                        temp_key = ['attachment']
+                    elif self.type in ['core', 'brick'] and list(child_direction) == ['attachment']:
+                        temp_key = list(direction)
+                    elif self.type == 'core' and list(child_direction) in [['front'], ['back']]:
+                        temp_key = ['front', 'back']
+
+                    if temp_key in self.possible_children and tuple(temp_key) not in self.children.keys():
+                        self.children[tuple(temp_key)] = child.children[child_direction]
+
                 return 0
             index = module.remove_node(index - 1)
             if index == 0:
@@ -183,17 +238,27 @@ class ModuleGenotype:
 
         return self
 
+    def choose_random_module(self, rng: np.random.Generator, brain: BrainGenotype):
+        module_chooser = rng.random()
+        rotation = rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value, RightAngles.DEG_270.value])
+
+        if module_chooser < 0.5:
+            module = BrickGenotype(rotation)
+        else:
+            module = HingeGenotype(rotation)
+
+            new_brain_chooser = rng.random()
+            module.brain_index = brain.add_new(rng)
+
+        return module
+
 
 class CoreGenotype(ModuleGenotype):
     possible_children = [['left'], ['right'], ['front', 'back']]
     type = 'core'
     rotation = 0.0
-    possible_phase_differences = [0, math.pi]
+    possible_phase_differences = [math.pi]
     reverse_phase = 0
-
-    def develop(self, body, grid, mirror):
-        self.body_module = body.core_v1
-        super().develop(body, grid, mirror)
 
     def get_amount_nodes(self):
         nodes = 0
@@ -248,15 +313,6 @@ class HingeGenotype(ModuleGenotype):
     reverse_phase_value = 0
     type = 'hinge'
 
-    def develop(self, body, grid, mirror):
-        super().develop(body, grid, mirror)
-        self.body_module.map_uuid = self.brain_index
-
-        if mirror:
-            self.body_module.reverse_phase = self.reverse_phase_value
-        else:
-            self.body_module.reverse_phase = 0
-
     def get_body_module(self, reverse):
         super().get_body_module(reverse)
         self.body_module = ActiveHingeV1(self.temp_rotation)
@@ -307,14 +363,29 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
     def __init__(self, body: CoreGenotype):
         self.body = body
 
+    @classmethod
+    def initialize_body(cls, rng: np.random.Generator, brain: BrainGenotype):
+        number_of_modules = rng.integers(config.INIT_MIN_MODULES, config.INIT_MAX_MODULES)
+        body = CoreGenotype(0.0)
+        for _ in range(number_of_modules):
+            amount_possible_connections = body.get_amount_possible_connections()
+            connection_to_add = rng.integers(1, amount_possible_connections + 1)
+            body.add_random_module_to_connection(connection_to_add, rng, brain)
+
+        body.reverse_phase = rng.choice(body.possible_phase_differences)
+
+        return BodyGenotypeDirect(body)
+
     def get_brain_uuids(self):
         return self.body.check_for_brains()
 
+
     def develop_body(self):
-        body = BodyV1()
         self.body.reverse_phase_function(self.body.reverse_phase)
-        self.body.develop(body, None, False)
-        return body
+
+        body_developer = BodyDeveloper(self.body)
+        body_developer.develop()
+        return body_developer.body
 
 
 @event.listens_for(BodyGenotypeDirect, "before_update", propagate=True)

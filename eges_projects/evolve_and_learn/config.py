@@ -1,6 +1,6 @@
 """Configuration parameters for this example."""
-DATABASE_FILE = "test.sqlite"
-ENVIRONMENT = 'flat'
+DATABASE_FILE = "results/0909/learn-1_evosearch-1_controllers-adaptable_survivorselect-best_parentselect-tournament_environment-noisy_2.sqlite"
+ENVIRONMENT = 'noisy'
 NUM_REPETITIONS = 1
 NUM_SIMULATORS = 1
 NUM_PARALLEL_PROCESSES = 50
@@ -10,8 +10,8 @@ ENERGY = 100000
 MAX_ATTRACTION_COEFFICIENT = 1
 
 NEW_HINGE_NEW_BRAIN = 1
-INIT_MIN_MODULES = 5
-INIT_MAX_MODULES = 10
+INIT_MIN_MODULES = 10
+INIT_MAX_MODULES = 20
 SWITCH_BRAIN = 0.5
 MAX_ADD_MODULES = 3
 MAX_DELETE_MODULES = 3

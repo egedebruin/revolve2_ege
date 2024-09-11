@@ -3,7 +3,7 @@
 from revolve2.ci_group.modular_robots_v1 import gecko_v1
 from revolve2.ci_group.modular_robots_v1 import snake_v1
 
-DATABASE_FILE = "results/after_learn2/learn-1_evosearch-1_controllers-adaptable_select-tournament_environment-noisy_2_noisy_1.sqlite"
+DATABASE_FILE = "results/after_learn_random/7.sqlite"
 DATABASE_FILE_OLD = "old_file.sqlite"
 ENVIRONMENT = "noisy"
 NUM_SIMULATORS = 1
@@ -12,6 +12,9 @@ NUM_GENERATIONS = 499
 NUM_RANDOM_SAMPLES = 1
 FREQUENCY = 4
 BODY = gecko_v1()
+MAX_NUMBER_OF_MODULES = 40
+INIT_MIN_MODULES = 20
+INIT_MAX_MODULES = 30
 
 KAPPA = 3  # Variation for Acquisition function (Low is exploitation, high is exploration)
 ALPHA = 0  # Sampling noise

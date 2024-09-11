@@ -33,31 +33,35 @@ class BrainGenotype(orm.MappedAsDataclass):
     def initialize_brain(cls) -> 'BrainGenotype':
         return BrainGenotype(brain={})
 
-    def add_new(self, new_uuid: uuid.UUID):
-        self.brain[new_uuid] = np.array([])
+    def add_new(self, new_uuid: uuid.UUID, rng):
+        self.brain[new_uuid] = np.array(rng.random(2))
 
     def remove(self, old_uuid: uuid.UUID):
         self.brain.pop(old_uuid)
+
+    def mutate_brain(self, rng: np.random.Generator):
+        brain = BrainGenotype(brain=self.brain.copy())
+
+        for key, value in brain.brain.items():
+            noise = rng.normal(loc=0, scale=config.MUTATION_STD, size=len(value))
+            noisy_values = [v + n for v, n in zip(value, noise)]
+            brain.brain[key] = np.clip(noisy_values, 0, 1)
+
+        return brain
 
     def develop_brain(self, body: BodyV1):
         active_hinges = body.find_modules_of_type(ActiveHinge)
 
         amplitudes = []
         phases = []
-        touch_weights = []
-        sensor_phase_offset = []
         for active_hinge in active_hinges:
             amplitudes.append(self.brain[active_hinge.map_uuid][0])
             phases.append(self.brain[active_hinge.map_uuid][1] * 2 * math.pi)
-            touch_weights.append(self.brain[active_hinge.map_uuid][2] * config.FREQUENCY - config.FREQUENCY)
-            sensor_phase_offset.append(self.brain[active_hinge.map_uuid][3] * 2 * math.pi)
 
         brain = SineBrain(
             active_hinges=active_hinges,
             amplitudes=amplitudes,
             phases=phases,
-            touch_weights=touch_weights,
-            sensor_phase_offset=sensor_phase_offset
         )
 
         return brain

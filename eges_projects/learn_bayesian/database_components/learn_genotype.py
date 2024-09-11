@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from .base import Base
 from brain_genotype import BrainGenotype
-from body_genotype_direct import BodyGenotypeDirect
+from genotypes.body_genotype_direct import BodyGenotypeDirect
 
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot

@@ -53,13 +53,13 @@ def latin_hypercube(n, k, rng: np.random.Generator):
     return samples
 
 
-def run_experiment(i, old_file, environment):
+def run_experiment(i, old_file):
     logging.info("----------------")
     logging.info("Start experiment")
 
     # Open the database, only if it does not already exists.
     dbengine = open_database_sqlite(
-        'results/after_learn3/' + old_file.replace(".sqlite", "") + "_" + environment + "_" + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
+        "results/after_learn_best_2/" + old_file + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
     )
     # Create the structure of the database.
     Base.metadata.create_all(dbengine)
@@ -79,10 +79,11 @@ def run_experiment(i, old_file, environment):
     evaluator = Evaluator(
         headless=True,
         num_simulators=config.NUM_SIMULATORS,
-        environment=environment
+        environment='flat'
     )
 
-    genotype = body_getter.get_best_genotype('results/to_learn/' + old_file)
+    genotype = body_getter.get_best_genotype('../evolve_and_learn/results/0209/' + old_file)
+    # genotype = Genotype.initialize(rng)
     pbounds = {}
 
     for uuid in genotype.brain.keys():
@@ -103,14 +104,13 @@ def run_experiment(i, old_file, environment):
     # Run cma for the defined number of generations.
     logging.info("Start optimization process.")
 
-    best_value = 0
+    best_value = -100
     best_point = {}
 
     for i in range(config.NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES):
         logging.info(f"Generation {i + 1} / {config.NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES}.")
 
         if i < config.NUM_RANDOM_SAMPLES:
-            j = 0
             next_point = {}
             for key in genotype.brain.keys():
                 next_point['amplitude_' + str(key)] = genotype.brain[key][0]
@@ -175,27 +175,25 @@ def run_experiment(i, old_file, environment):
 def read_args():
     # Read args
     parser = ArgumentParser()
-    parser.add_argument("--learn", required=True)
-    parser.add_argument("--environment", required=True)
     parser.add_argument("--learn_environment", required=True)
     args = parser.parse_args()
 
-    return "learn-" + str(args.learn) + "_evosearch-1_controllers-adaptable_select-tournament_environment-" + args.environment, args.learn_environment
+    return "learn-", args.learn_environment
 
 
 def run_experiments():
-    file_name, learn_environment = read_args()
-    files = [file for file in os.listdir("results/to_learn") if file.startswith(file_name)]
-    for file in files:
-        with concurrent.futures.ProcessPoolExecutor(
-                max_workers=config.NUM_PARALLEL_PROCESSES
-        ) as executor:
+    file_name = 'learn-1'
+    files = [file for file in os.listdir("../evolve_and_learn/results/0209") if file.startswith(file_name)]
+    with concurrent.futures.ProcessPoolExecutor(
+            max_workers=config.NUM_PARALLEL_PROCESSES
+    ) as executor:
+        for file in files:
             futures = [
-                executor.submit(run_experiment, i, file, learn_environment)
-                for i in range(config.NUM_PARALLEL_PROCESSES)
+                executor.submit(run_experiment, i, file)
+                for i in range(10)
             ]
-            for future in futures:
-                future.result()
+    for future in futures:
+        future.result()
 
 
 def main() -> None:

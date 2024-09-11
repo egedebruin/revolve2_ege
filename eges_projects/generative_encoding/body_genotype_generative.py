@@ -6,6 +6,7 @@ from abc import abstractmethod
 
 import numpy as np
 import sqlalchemy.orm as orm
+from pyrr import Vector3
 
 from brain_genotype import BrainGenotype
 import config
@@ -15,6 +16,44 @@ from revolve2.modular_robot.body.v1 import BodyV1, BrickV1, ActiveHingeV1
 
 from sqlalchemy import event
 from sqlalchemy.engine import Connection
+
+
+class BodyDeveloper:
+    queue: list
+    grid: list
+    body: BodyV1
+    def __init__(self, initial_module):
+        self.grid = [Vector3([0, 0, 0])]
+        self.body = BodyV1()
+
+        initial_module.body_module = self.body.core_v1
+
+        self.queue = []
+        self.queue.append((initial_module, initial_module.body_module))
+
+
+    def develop(self):
+        while len(self.queue) > 0:
+            current_module, current_body_module = self.queue.pop(0)
+            for direction, new_module in current_module.children.items():
+                new_body_module = new_module.get_body_module()
+                setattr(current_body_module, direction, new_body_module)
+
+                grid_position = self.body.grid_position(new_body_module)
+                if grid_position in self.grid or len(self.grid) > config.MAX_NUMBER_OF_MODULES:
+                    setattr(current_body_module, direction, None)
+                    continue
+                self.grid.append(grid_position)
+
+                self.queue.append((new_module, new_body_module))
+
+            if isinstance(current_body_module, ActiveHingeV1):
+                BodyDeveloper.develop_hinge(current_module, current_body_module)
+
+    @staticmethod
+    def develop_hinge(hinge_module, hinge_body_module):
+        hinge_body_module.map_uuid = hinge_module.module_id
+        hinge_body_module.reverse_phase = 0
 
 
 class Module:
@@ -30,7 +69,7 @@ class Module:
 
 
 class CoreModule(Module):
-    possible_children = [['left', 'right'], ['front', 'back']]
+    possible_children = [['left'], ['right'], ['front'], ['back']]
     type = 'core'
 
 
@@ -42,9 +81,6 @@ class BrickModule(Module):
 class HingeModule(Module):
     possible_children = [['attachment']]
     type = 'hinge'
-
-    def __init__(self, module_id: uuid.UUID):
-        super().__init__(module_id)
 
 
 class Rule:
@@ -101,10 +137,6 @@ class ModuleGenotype:
         self.children = {}
         self.iteration = iteration
 
-    @abstractmethod
-    def develop(self):
-        pass
-
     def replace(self, rule: Rule, iteration, check_start=True):
         if (rule.start.module_id == self.module_id and iteration != self.iteration) or not check_start:
             for name, module in rule.end.items():
@@ -133,41 +165,20 @@ class ModuleGenotype:
 class CoreGenotype(ModuleGenotype):
     type = 'core'
 
-    def develop(self):
-        body = BodyV1()
-        current = body.core_v1
-
-        for direction, module in self.children.items():
-            setattr(current, direction, module.develop())
-
-        return body
-
 
 class BrickGenotype(ModuleGenotype):
     type = 'brick'
 
-    def develop(self):
-        current = BrickV1(self.rotation)
+    def get_body_module(self):
+        return BrickV1(self.rotation)
 
-        for direction, module in self.children.items():
-            setattr(current, direction, module.develop())
-
-        return current
 
 
 class HingeGenotype(ModuleGenotype):
     type = 'hinge'
 
-    def develop(self):
-        current = ActiveHingeV1(self.rotation)
-
-        for direction, module in self.children.items():
-            setattr(current, direction, module.develop())
-
-        current.map_uuid = self.module_id
-
-        return current
-
+    def get_body_module(self):
+        return ActiveHingeV1(self.rotation)
 
 class BodyGenotype:
     """SQLAlchemy model for a direct encoding body genotype."""
@@ -190,7 +201,7 @@ class BodyGenotype:
         brick = BrickModule(uuid.uuid4())
         hinge_uuid = uuid.uuid4()
         hinge = HingeModule(hinge_uuid)
-        brain.add_new(hinge_uuid)
+        brain.add_new(hinge_uuid, rng)
 
         genotype = BodyGenotype()
         genotype.first_module = core
@@ -255,7 +266,7 @@ class BodyGenotype:
         else:
             hinge_uuid = uuid.uuid4()
             new_module = HingeModule(hinge_uuid)
-            brain.add_new(hinge_uuid)
+            brain.add_new(hinge_uuid, rng)
 
         self.modules.append(new_module)
         self.add_module_to_existing_rules(new_module, rng)
@@ -334,9 +345,9 @@ class BodyGenotype:
         for i in self.creation:
             direct_encoding_body.replace(self.rules[i], i)
 
-        body = direct_encoding_body.develop()
-
-        return body
+        body_developer = BodyDeveloper(direct_encoding_body)
+        body_developer.develop()
+        return body_developer.body
 
     def serialize(self):
         serialized = {'first_module': {

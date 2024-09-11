@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from base import Base
+from .base import Base
 from brain_genotype import BrainGenotype
 from body_genotype_generative import BodyGenotypeGenerative
 

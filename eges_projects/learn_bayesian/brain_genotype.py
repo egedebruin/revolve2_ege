@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 import uuid
 
 from sine_brain import SineBrain
+import config
 from revolve2.modular_robot.body.base import ActiveHinge
 from revolve2.modular_robot.body.v1 import BodyV1
 
@@ -27,6 +28,32 @@ class BrainGenotype(orm.MappedAsDataclass):
 
     def __init__(self, brain: dict[uuid.UUID, npt.NDArray[np.float_]]):
         self.brain = brain
+
+    @classmethod
+    def initialize_brain(cls, rng) -> 'BrainGenotype':
+        number_of_brains = 1
+
+        brain = {}
+        for i in range(number_of_brains):
+            new_uuid = uuid.uuid4()
+            brain[new_uuid] = np.array(rng.random(2))
+
+        return BrainGenotype(brain=brain)
+
+    def add_new(self, rng):
+        new_uuid = uuid.uuid4()
+        self.brain[new_uuid] = np.array(rng.random(2))
+        return new_uuid
+
+    def remove_unused(self, used_uuids, rng):
+        difference = [item for item in list(self.brain.keys()) if item not in list(used_uuids)]
+
+        for remove_item in difference:
+            self.brain.pop(remove_item)
+
+        if len(self.brain.keys()) == 0:
+            new_uuid = uuid.uuid4()
+            self.brain = {new_uuid: np.array(rng.random(2))}
 
     def develop_brain(self, body: BodyV1):
         active_hinges = body.find_modules_of_type(ActiveHinge)

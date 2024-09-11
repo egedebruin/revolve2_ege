@@ -29,7 +29,6 @@ def get_best_genotype(file_name):
             .join_from(Genotype, Individual, Individual.genotype_id == Genotype.id)
             .join_from(Individual, Population, Population.id == Individual.population_id)
             .join_from(Population, Generation, Generation.population_id == Population.id)
-            .where(Generation.generation_index < 121)
             .order_by(LearnIndividual.fitness.desc())
             .limit(1)
         ).one()

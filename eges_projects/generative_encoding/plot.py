@@ -3,10 +3,10 @@
 import config
 import matplotlib.pyplot as plt
 import pandas
-from eges_projects.generative_encoding.database_components.experiment import Experiment
-from eges_projects.generative_encoding.database_components.generation import Generation
-from eges_projects.generative_encoding.database_components.individual import Individual
-from eges_projects.generative_encoding.database_components.population import Population
+from database_components.experiment import Experiment
+from database_components.generation import Generation
+from database_components.individual import Individual
+from database_components.population import Population
 from sqlalchemy import select
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite

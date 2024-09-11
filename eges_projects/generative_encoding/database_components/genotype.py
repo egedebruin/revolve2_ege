@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import numpy as np
-from base import Base
+import sqlalchemy.orm as orm
+from .base import Base
 from body_genotype_generative import BodyGenotypeGenerative
 from brain_genotype import BrainGenotype
 
@@ -14,6 +15,8 @@ class Genotype(Base, HasId, BodyGenotypeGenerative, BrainGenotype):
     """SQLAlchemy model for a genotype for a modular robot body and brain."""
 
     __tablename__ = "genotype"
+    parent_1_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
+    parent_2_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
 
     @classmethod
     def initialize(
@@ -47,7 +50,7 @@ class Genotype(Base, HasId, BodyGenotypeGenerative, BrainGenotype):
         :param rng: Random number generator.
         :returns: A mutated copy of the provided genotype.
         """
-        brain = BrainGenotype(brain=self.brain.copy())
+        brain = self.mutate_brain(rng)
         body = self.body.mutate_body(rng, brain)
 
         return Genotype(body=body, brain=brain.brain)
