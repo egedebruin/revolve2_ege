@@ -100,7 +100,7 @@ def select_parent(
                 1,
                 [individual.genotype for individual in population.individuals],
                 [individual.reproduction_fitness for individual in population.individuals],
-                lambda _, fitnesses: selection.tournament(rng, fitnesses, k=4),
+                lambda _, fitnesses: selection.tournament(rng, fitnesses, k=config.PARENT_TOURNAMENT_SIZE),
             )
             for _ in range(int(offspring_size))
         ],

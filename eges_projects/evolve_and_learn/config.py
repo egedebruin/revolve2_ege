@@ -1,5 +1,5 @@
 """Configuration parameters for this example."""
-DATABASE_FILE = "results/0909/learn-1_evosearch-1_controllers-adaptable_survivorselect-best_parentselect-tournament_environment-noisy_2.sqlite"
+DATABASE_FILE = "test.sqlite"
 ENVIRONMENT = 'noisy'
 NUM_REPETITIONS = 1
 NUM_SIMULATORS = 1
@@ -13,13 +13,13 @@ NEW_HINGE_NEW_BRAIN = 1
 INIT_MIN_MODULES = 10
 INIT_MAX_MODULES = 20
 SWITCH_BRAIN = 0.5
-MAX_ADD_MODULES = 3
-MAX_DELETE_MODULES = 3
+MAX_ADD_MODULES = 1
+MAX_DELETE_MODULES = 1
 
 MAX_NUMBER_OF_MODULES = 30
 
 KAPPA = 3  # Variation for Acquisition function (Low is exploitation, high is exploration)
-ALPHA = 1e-10  # Sampling noise
+ALPHA = 1e-100  # Sampling noise
 NU = 5/2  # Smoothness parameter for Matern kernel (Low is rigid, high is smooth)
 LENGTH_SCALE = 0.2  # Also affects smoothness, but I'm not sure how (low is rigid, high is smooth (is it though??))
 NEIGHBOUR_SCALE = 0.001
@@ -27,8 +27,9 @@ MUTATION_STD = 0.1
 
 POPULATION_SIZE = 50
 OFFSPRING_SIZE = 50
-FUNCTION_EVALUATIONS = 400000
+FUNCTION_EVALUATIONS = 200000
 LOCAL_COMPETITION_NEIGHBOURHOOD_SIZE = 10
+PARENT_TOURNAMENT_SIZE = 4
 
 CROSSOVER = False
 INITIAL_POPULATION_FROM_DATABASE = False
