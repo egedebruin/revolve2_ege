@@ -417,7 +417,7 @@ class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
             mutation_chooser = rng.random()
 
             if mutation_chooser < 0.33:
-                for _ in range(rng.integers(1, config.MAX_ADD_MODULES + 1)):
+                for _ in range(rng.integers(1, config.MAX_ADD_MODULES) + 1):
                     amount_nodes = body.get_amount_nodes() + 1
                     node_to_add = rng.integers(1, amount_nodes + 1)
                     body.add_random_module_to_block(node_to_add, rng, brain)
