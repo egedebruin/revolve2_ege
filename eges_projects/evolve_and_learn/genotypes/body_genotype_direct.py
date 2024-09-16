@@ -435,7 +435,10 @@ class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
                     brain.remove_unused(used_brains, rng)
                 mutation_accepted = True
             elif mutation_chooser <= 1:
-                body.reverse_phase = rng.choice(body.possible_phase_differences)
+                new_phase = body.reverse_phase
+                while new_phase == body.reverse_phase:
+                    new_phase = rng.choice(body.possible_phase_differences)
+                body.reverse_phase = new_phase
                 mutation_accepted = True
             else:
                 body.switch_brain(rng, brain)
