@@ -399,10 +399,12 @@ class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
     def initialize_body(cls, rng: np.random.Generator, brain: BrainGenotype):
         number_of_modules = rng.integers(config.INIT_MIN_MODULES, config.INIT_MAX_MODULES)
         body = CoreGenotype(0.0)
-        for _ in range(number_of_modules):
+        current_number_of_modules = 0
+        while current_number_of_modules < number_of_modules:
             amount_possible_connections = body.get_amount_possible_connections()
             connection_to_add = rng.integers(1, amount_possible_connections + 1)
             body.add_random_module_to_connection(connection_to_add, rng, brain)
+            current_number_of_modules = body.get_amount_modules()
 
         body.reverse_phase = rng.choice(body.possible_phase_differences)
 
