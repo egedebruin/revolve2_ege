@@ -418,13 +418,13 @@ class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
             body = copy.deepcopy(self.body)
             mutation_chooser = rng.random()
 
-            if mutation_chooser < 0.33:
+            if mutation_chooser < 0.45:
                 for _ in range(rng.integers(1, config.MAX_ADD_MODULES + 1)):
                     amount_nodes = body.get_amount_nodes() + 1
                     node_to_add = rng.integers(1, amount_nodes + 1)
                     body.add_random_module_to_block(node_to_add, rng, brain)
                 mutation_accepted = body.get_amount_modules() < config.MAX_NUMBER_OF_MODULES * 1.25
-            elif mutation_chooser <= 0.66:
+            elif mutation_chooser <= 0.9:
                 for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
                     amount_nodes = body.get_amount_nodes()
                     if amount_nodes == 0:

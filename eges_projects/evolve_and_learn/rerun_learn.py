@@ -36,7 +36,7 @@ def main() -> None:
             .join_from(Genotype, Individual, Individual.genotype_id == Genotype.id)
             .join_from(Individual, Population, Population.id == Individual.population_id)
             .join_from(Population, Generation, Generation.population_id == Population.id)
-            .where(Generation.generation_index >= 150)
+            .where(Generation.generation_index > -1)
             .order_by(LearnIndividual.objective_value.desc())
             .limit(1)
         ).one()
@@ -48,6 +48,7 @@ def main() -> None:
 
     print(f"Best fitness: {fitness}")
     print(len(genotype.brain))
+    print(genotype.body.get_amount_modules())
 
     # Create the evaluator.
     evaluator = Evaluator(headless=False, num_simulators=1)
