@@ -9,7 +9,8 @@ import json
 from sqlalchemy import event
 from sqlalchemy.engine import Connection
 
-from brain_genotype import BrainGenotype
+from genotypes.body_genotype import BodyGenotype
+from genotypes.brain_genotype_simple import BrainGenotype
 import config
 from revolve2.modular_robot.body import RightAngles
 from revolve2.modular_robot.body.v1 import BodyV1, ActiveHingeV1, BrickV1
@@ -238,26 +239,12 @@ class ModuleGenotype:
 
         return self
 
-    def choose_random_module(self, rng: np.random.Generator, brain: BrainGenotype):
-        module_chooser = rng.random()
-        rotation = rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value, RightAngles.DEG_270.value])
-
-        if module_chooser < 0.5:
-            module = BrickGenotype(rotation)
-        else:
-            module = HingeGenotype(rotation)
-
-            new_brain_chooser = rng.random()
-            module.brain_index = brain.add_new(rng)
-
-        return module
-
 
 class CoreGenotype(ModuleGenotype):
     possible_children = [['left'], ['right'], ['front', 'back']]
     type = 'core'
     rotation = 0.0
-    possible_phase_differences = [math.pi]
+    possible_phase_differences = [0, math.pi]
     reverse_phase = 0
 
     def get_amount_nodes(self):
@@ -351,7 +338,7 @@ class HingeGenotype(ModuleGenotype):
         return nodes
 
 
-class BodyGenotypeDirect(orm.MappedAsDataclass):
+class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
     """SQLAlchemy model for a direct encoding body genotype."""
 
     body: CoreGenotype
@@ -362,19 +349,6 @@ class BodyGenotypeDirect(orm.MappedAsDataclass):
 
     def __init__(self, body: CoreGenotype):
         self.body = body
-
-    @classmethod
-    def initialize_body(cls, rng: np.random.Generator, brain: BrainGenotype):
-        number_of_modules = rng.integers(config.INIT_MIN_MODULES, config.INIT_MAX_MODULES)
-        body = CoreGenotype(0.0)
-        for _ in range(number_of_modules):
-            amount_possible_connections = body.get_amount_possible_connections()
-            connection_to_add = rng.integers(1, amount_possible_connections + 1)
-            body.add_random_module_to_connection(connection_to_add, rng, brain)
-
-        body.reverse_phase = rng.choice(body.possible_phase_differences)
-
-        return BodyGenotypeDirect(body)
 
     def get_brain_uuids(self):
         return self.body.check_for_brains()

@@ -25,41 +25,13 @@ from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.rng import seed_from_time, make_rng
 
 
-def latin_hypercube(n, k, rng: np.random.Generator):
-    """
-    Generate Latin Hypercube samples.
-
-    Parameters:
-    n (int): Number of samples.
-    k (int): Number of dimensions.
-
-    Returns:
-    numpy.ndarray: Array of Latin Hypercube samples of shape (n, k).
-    """
-    # Generate random permutations for each dimension
-    perms = [rng.permutation(n) for _ in range(k)]
-
-    # Generate the samples
-    samples = np.empty((n, k))
-
-    for i in range(k):
-        # Generate the intervals
-        interval = np.linspace(0, 1, n+1)
-
-        # Assign values from each interval to the samples
-        for j in range(n):
-            samples[perms[i][j], i] = rng.uniform(interval[j], interval[j+1])
-
-    return samples
-
-
-def run_experiment(i, old_file):
+def run_experiment(i, genotype, old_file):
     logging.info("----------------")
     logging.info("Start experiment")
 
     # Open the database, only if it does not already exists.
     dbengine = open_database_sqlite(
-        "results/after_learn_best_2/" + old_file + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
+        "results/after_learn_2309/" + old_file + "_" + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
     )
     # Create the structure of the database.
     Base.metadata.create_all(dbengine)
@@ -79,11 +51,9 @@ def run_experiment(i, old_file):
     evaluator = Evaluator(
         headless=True,
         num_simulators=config.NUM_SIMULATORS,
-        environment='flat'
+        environment='noisy'
     )
 
-    genotype = body_getter.get_best_genotype('../evolve_and_learn/results/0209/' + old_file)
-    # genotype = Genotype.initialize(rng)
     pbounds = {}
 
     for uuid in genotype.brain.keys():
@@ -98,8 +68,6 @@ def run_experiment(i, old_file):
     )
     optimizer.set_gp_params(alpha=config.ALPHA, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds=(config.LENGTH_SCALE - 0.01, config.LENGTH_SCALE + 0.01)))
     utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
-
-    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 2 * len(genotype.brain.keys()), rng)
 
     # Run cma for the defined number of generations.
     logging.info("Start optimization process.")
@@ -183,15 +151,16 @@ def read_args():
 
 def run_experiments():
     file_name = 'learn-1'
-    files = [file for file in os.listdir("../evolve_and_learn/results/0209") if file.startswith(file_name)]
+    folder = "results/2309"
+    files = [file for file in os.listdir(folder) if file.startswith(file_name)]
     with concurrent.futures.ProcessPoolExecutor(
             max_workers=config.NUM_PARALLEL_PROCESSES
     ) as executor:
+        futures = []
         for file in files:
-            futures = [
-                executor.submit(run_experiment, i, file)
-                for i in range(10)
-            ]
+            genotypes = body_getter.get_best_genotype(folder + "/" + file)
+            for i, genotype in enumerate(genotypes):
+                futures.append(executor.submit(run_experiment, i, genotype, file))
     for future in futures:
         future.result()
 

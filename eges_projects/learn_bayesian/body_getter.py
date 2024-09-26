@@ -21,7 +21,7 @@ def get_best_genotype(file_name):
     )
     with Session(dbengine) as ses:
         row = ses.execute(
-            select(LearnGenotype, LearnIndividual.fitness)
+            select(LearnGenotype)
             .join_from(LearnGenotype, LearnIndividual, LearnGenotype.id == LearnIndividual.genotype_id)
             .join_from(LearnIndividual, LearnPopulation, LearnIndividual.population_id == LearnPopulation.id)
             .join_from(LearnPopulation, LearnGeneration, LearnPopulation.id == LearnGeneration.learn_population_id)
@@ -29,10 +29,12 @@ def get_best_genotype(file_name):
             .join_from(Genotype, Individual, Individual.genotype_id == Genotype.id)
             .join_from(Individual, Population, Population.id == Individual.population_id)
             .join_from(Population, Generation, Generation.population_id == Population.id)
-            .order_by(LearnIndividual.fitness.desc())
-            .limit(1)
-        ).one()
+            .where(Generation.generation_index == 166)
+        ).all()
         assert row is not None
-    genotype = row[0]
 
-    return genotype
+    genotypes = []
+    for genotype in row:
+        genotypes.append(genotype[0])
+
+    return genotypes

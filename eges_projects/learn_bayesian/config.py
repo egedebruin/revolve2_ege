@@ -1,18 +1,14 @@
 """Configuration parameters for this example."""
 
-from revolve2.ci_group.modular_robots_v1 import gecko_v1
-from revolve2.ci_group.modular_robots_v1 import snake_v1
-
-DATABASE_FILE = "results/after_learn_random/7.sqlite"
+DATABASE_FILE = "test.sqlite"
 DATABASE_FILE_OLD = "old_file.sqlite"
 ENVIRONMENT = "noisy"
 NUM_SIMULATORS = 1
-NUM_PARALLEL_PROCESSES = 10
-NUM_GENERATIONS = 499
+NUM_PARALLEL_PROCESSES = 200
+NUM_GENERATIONS = 500
 NUM_RANDOM_SAMPLES = 1
 FREQUENCY = 4
-BODY = gecko_v1()
-MAX_NUMBER_OF_MODULES = 40
+MAX_NUMBER_OF_MODULES = 20
 INIT_MIN_MODULES = 20
 INIT_MAX_MODULES = 30
 
