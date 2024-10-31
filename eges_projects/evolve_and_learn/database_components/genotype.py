@@ -6,6 +6,7 @@ import uuid
 
 import numpy as np
 import sqlalchemy.orm as orm
+from dataclasses import field
 from .base import Base
 
 import config
@@ -20,6 +21,8 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
     """SQLAlchemy model for a genotype for a modular robot body and brain."""
 
     __tablename__ = "genotype"
+    experience: list = field(default_factory=lambda: [])
+    inherited_experience: list = field(default_factory=lambda: [])
     parent_1_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
     parent_2_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
     mutation_parameter: orm.Mapped[float] = orm.mapped_column(nullable=True, default=None)

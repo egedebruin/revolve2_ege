@@ -448,7 +448,7 @@ class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
                 if config.CONTROLLERS == -1:
                     used_brains = body.check_for_brains()
                     brain.remove_unused(used_brains, rng)
-                mutation_accepted = False
+                mutation_accepted = True
         return BodyGenotypeDirect(body), mutation_chooser
 
     def get_brain_uuids(self):

@@ -218,8 +218,10 @@ def generate_offspring(rng, population):
     parents = select_function()
     offspring_genotypes = []
     for [parent_i] in parents:
-        child_genotype = population.individuals[parent_i].genotype.mutate(rng)
+        parent_genotype = population.individuals[parent_i].genotype
+        child_genotype = parent_genotype.mutate(rng)
         child_genotype.parent_1_genotype_id = population.individuals[parent_i].genotype.id
+        child_genotype.inherited_experience = parent_genotype.experience
         offspring_genotypes.append(child_genotype)
     return offspring_genotypes
 

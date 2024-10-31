@@ -28,7 +28,7 @@ def main() -> None:
 
     with Session(dbengine) as ses:
         row = ses.execute(
-            select(LearnGenotype, LearnIndividual.objective_value)
+            select(Genotype, LearnGenotype, LearnIndividual.objective_value)
             .join_from(LearnGenotype, LearnIndividual, LearnGenotype.id == LearnIndividual.genotype_id)
             .join_from(LearnIndividual, LearnPopulation, LearnIndividual.population_id == LearnPopulation.id)
             .join_from(LearnPopulation, LearnGeneration, LearnPopulation.id == LearnGeneration.learn_population_id)
@@ -43,11 +43,12 @@ def main() -> None:
         assert row is not None
 
         genotype = row[0]
-        fitness = row[1]
-    modular_robot = genotype.develop(genotype.develop_body())
+        learn_genotype = row[1]
+        fitness = row[2]
+    modular_robot = learn_genotype.develop(genotype.develop_body())
 
     print(f"Best fitness: {fitness}")
-    print(len(genotype.brain))
+    print(len(learn_genotype.brain))
     print(genotype.body.get_amount_modules())
 
     # Create the evaluator.

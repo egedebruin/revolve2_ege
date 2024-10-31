@@ -26,35 +26,6 @@ from evaluator import Evaluator
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
 from revolve2.experimentation.rng import make_rng, seed_from_time
-from revolve2.modular_robot.body.base import ActiveHinge
-
-
-def latin_hypercube(n, k, rng: np.random.Generator):
-    """
-    Generate Latin Hypercube samples.
-
-    Parameters:
-    n (int): Number of samples.
-    k (int): Number of dimensions.
-
-    Returns:
-    numpy.ndarray: Array of Latin Hypercube samples of shape (n, k).
-    """
-    # Generate random permutations for each dimension
-    perms = [rng.permutation(n) for _ in range(k)]
-
-    # Generate the samples
-    samples = np.empty((n, k))
-
-    for i in range(k):
-        # Generate the intervals
-        interval = np.linspace(0, 1, n+1)
-
-        # Assign values from each interval to the samples
-        for j in range(n):
-            samples[perms[i][j], i] = rng.uniform(interval[j], interval[j+1])
-
-    return samples
 
 
 def run_experiment(dbengine: Engine) -> None:
@@ -174,10 +145,11 @@ def learn_population(genotypes, evaluator, dbengine, rng):
 def learn_genotype(genotype, evaluator, rng):
     # We get the brain uuids from the developed body, because if it is too big we don't want to learn unused uuids
     developed_body = genotype.develop_body()
-    brain_uuids = set()
-    for active_hinge in developed_body.find_modules_of_type(ActiveHinge):
-        brain_uuids.add(active_hinge.map_uuid)
-    brain_uuids = list(brain_uuids)
+    # brain_uuids = set()
+    # for active_hinge in developed_body.find_modules_of_type(ActiveHinge):
+    #     brain_uuids.add(active_hinge.map_uuid)
+    # brain_uuids = list(brain_uuids)
+    brain_uuids = list(genotype.brain.keys())
     genotype.update_brain_parameters(brain_uuids, rng)
 
     if len(brain_uuids) == 0:
@@ -204,46 +176,43 @@ def learn_genotype(genotype, evaluator, rng):
         allow_duplicate_points=True,
         random_state=int(rng.integers(low=0, high=2**32))
     )
-    optimizer.set_gp_params(alpha=config.ALPHA, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds=(config.LENGTH_SCALE - 0.01, config.LENGTH_SCALE + 0.01)))
+    optimizer.set_gp_params(alpha=[], kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
     utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
 
     best_objective_value = None
-    best_learn_genotype = None
     learn_generations = []
-    lhs = latin_hypercube(config.NUM_RANDOM_SAMPLES, 2 * len(brain_uuids), rng)
     best_point = {}
-    for i in range(config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES):
-        logging.info(f"Learn generation {i + 1} / {config.LEARN_NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES}.")
-        if i < config.NUM_RANDOM_SAMPLES:
-            if config.EVOLUTIONARY_SEARCH:
-                next_point = {}
-                for key in brain_uuids:
-                    next_point['amplitude_' + str(key)] = genotype.brain[key][0]
-                    next_point['phase_' + str(key)] = genotype.brain[key][1]
-            else:
-                j = 0
-                next_point = {}
-                for key in brain_uuids:
-                    next_point['amplitude_' + str(key)] = lhs[i][j]
-                    next_point['phase_' + str(key)] = lhs[i][j + 1]
-                    j += 2
-                next_point = dict(sorted(next_point.items()))
+    sorted_inherited_experience = sorted(genotype.inherited_experience, key=lambda x: x[1], reverse=True)
+    alphas = np.array([])
+
+    if config.INHERIT_SAMPLES and config.NUM_REDO_INHERITED_SAMPLES == 0:
+        for inherited_experience_sample, objective_value in sorted_inherited_experience:
+            alphas = np.append(alphas, config.INHERITED_ALPHA)
+            optimizer.register(params=inherited_experience_sample, target=objective_value)
+            optimizer.set_gp_params(alpha=alphas)
+
+    for i in range(config.LEARN_NUM_GENERATIONS + config.NUM_REDO_INHERITED_SAMPLES):
+        logging.info(f"Learn generation {i + 1} / {config.LEARN_NUM_GENERATIONS + config.NUM_REDO_INHERITED_SAMPLES}.")
+        if i < config.NUM_REDO_INHERITED_SAMPLES and len(sorted_inherited_experience) > 0:
+            next_point = sorted_inherited_experience[i][0]
         else:
             next_point = optimizer.suggest(utility)
             next_point = dict(sorted(next_point.items()))
             next_best = utility.utility([list(next_point.values())], optimizer._gp, 0)
-            for _ in range(10000):
-                possible_point = {}
-                for key in best_point.keys():
-                    possible_point[key] = best_point[key] + np.random.normal(0, config.NEIGHBOUR_SCALE)
-                possible_point = dict(sorted(possible_point.items()))
 
-                utility_value = utility.utility([list(possible_point.values())], optimizer._gp, 0)
-                if utility_value > next_best:
-                    next_best = utility_value
-                    next_point = possible_point
+            if best_point:
+                for _ in range(10000):
+                    possible_point = {}
+                    for key in best_point.keys():
+                        possible_point[key] = np.clip(best_point[key] + np.random.normal(0, config.NEIGHBOUR_SCALE), 0, 1)
+                    possible_point = dict(sorted(possible_point.items()))
 
-        new_learn_genotype = LearnGenotype(brain={}, body=genotype.body)
+                    utility_value = utility.utility([list(possible_point.values())], optimizer._gp, 0)
+                    if utility_value > next_best:
+                        next_best = utility_value
+                        next_point = possible_point
+
+        new_learn_genotype = LearnGenotype(brain={})
         for brain_uuid in brain_uuids:
             new_learn_genotype.brain[brain_uuid] = np.array(
                 [
@@ -261,10 +230,12 @@ def learn_genotype(genotype, evaluator, rng):
 
         if best_objective_value is None or objective_value >= best_objective_value:
             best_objective_value = objective_value
-            best_learn_genotype = new_learn_genotype
             best_point = next_point
 
+        alphas = np.append(alphas, config.ALPHA)
         optimizer.register(params=next_point, target=objective_value)
+        optimizer.set_gp_params(alpha=alphas)
+        genotype.experience.append((next_point, objective_value))
 
         # From the samples and fitnesses, create a population that we can save.
         population = LearnPopulation(
@@ -280,11 +251,6 @@ def learn_genotype(genotype, evaluator, rng):
         )
         learn_generations.append(learn_generation)
 
-    if config.OVERWRITE_BRAIN_GENOTYPE:
-        for key, value in best_learn_genotype.brain.items():
-            genotype.brain[key] = value
-        genotype.brain = {k: v for k, v in sorted(genotype.brain.items())}
-
     return best_objective_value, learn_generations
 
 
@@ -295,32 +261,31 @@ def read_args():
     parser.add_argument("--controllers", required=True)
     parser.add_argument("--environment", required=True)
     parser.add_argument("--repetition", required=True)
-    parser.add_argument("--evosearch", required=True)
     parser.add_argument("--survivorselect", required=True)
     parser.add_argument("--parentselect", required=True)
+    parser.add_argument("--inheritsamples", required=True)
     args = parser.parse_args()
-    if args.evosearch == '1':
-        config.NUM_RANDOM_SAMPLES = 1
-        config.LEARN_NUM_GENERATIONS = int(args.learn) - 1
-    else:
-        config.NUM_RANDOM_SAMPLES = min(int(int(args.learn) / 10), 1)
-        config.LEARN_NUM_GENERATIONS = int(int(args.learn) - int(args.learn) / 10)
-    config.NUM_GENERATIONS = int((config.FUNCTION_EVALUATIONS / (int(args.learn) * config.OFFSPRING_SIZE)))
+    config.NUM_REDO_INHERITED_SAMPLES = int(args.inheritsamples)
+    config.INHERIT_SAMPLES = True
+    if config.NUM_REDO_INHERITED_SAMPLES == -1:
+        config.INHERIT_SAMPLES = False
+        config.NUM_REDO_INHERITED_SAMPLES = 0
+    config.LEARN_NUM_GENERATIONS = int(args.learn) - config.NUM_REDO_INHERITED_SAMPLES
     config.CONTROLLERS = int(args.controllers)
     config.ENVIRONMENT = args.environment
-    config.EVOLUTIONARY_SEARCH = args.evosearch == '1'
     config.SURVIVOR_SELECT_STRATEGY = args.survivorselect
     config.PARENT_SELECT_STRATEGY = args.parentselect
     controllers_string = 'adaptable' if config.CONTROLLERS == -1 else config.CONTROLLERS
-    config.DATABASE_FILE = ("learn-" + str(args.learn) + "_evosearch-" + args.evosearch + "_controllers-" +
-                            str(controllers_string) + "_survivorselect-" + args.survivorselect + "_parentselect-" +
-                            args.parentselect + "_environment-" + args.environment + "_" + str(args.repetition) + ".sqlite")
+    config.DATABASE_FILE = ("learn-" + str(args.learn) + "_controllers-" + str(controllers_string) + "_survivorselect-"
+                            + args.survivorselect + "_parentselect-" + args.parentselect + "_inheritsamples-" + args.inheritsamples + "_environment-"
+                            + args.environment + "_" + str(args.repetition) + ".sqlite")
 
 
 def main() -> None:
     """Run the program."""
     if config.READ_ARGS:
         read_args()
+    config.NUM_GENERATIONS = int((config.FUNCTION_EVALUATIONS / (int(config.LEARN_NUM_GENERATIONS + config.NUM_REDO_INHERITED_SAMPLES) * config.OFFSPRING_SIZE)))
 
     # Set up logging.
     setup_logging(file_name="log.txt")
