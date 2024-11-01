@@ -5,7 +5,7 @@ import time
 from argparse import ArgumentParser
 
 import numpy as np
-from bayes_opt import BayesianOptimization, UtilityFunction
+from bayes_opt import BayesianOptimization, acquisition
 from sklearn.gaussian_process.kernels import Matern
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
@@ -174,14 +174,13 @@ def learn_genotype(genotype, evaluator, rng):
         f=None,
         pbounds=pbounds,
         allow_duplicate_points=True,
-        random_state=int(rng.integers(low=0, high=2**32))
+        random_state=int(rng.integers(low=0, high=2**32)),
+        acquisition_function=acquisition.UpperConfidenceBound(kappa=config.KAPPA)
     )
     optimizer.set_gp_params(alpha=[], kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
-    utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
 
     best_objective_value = None
     learn_generations = []
-    best_point = {}
     sorted_inherited_experience = sorted(genotype.inherited_experience, key=lambda x: x[1], reverse=True)
     alphas = np.array([])
 
@@ -196,21 +195,8 @@ def learn_genotype(genotype, evaluator, rng):
         if i < config.NUM_REDO_INHERITED_SAMPLES and len(sorted_inherited_experience) > 0:
             next_point = sorted_inherited_experience[i][0]
         else:
-            next_point = optimizer.suggest(utility)
+            next_point = optimizer.suggest()
             next_point = dict(sorted(next_point.items()))
-            next_best = utility.utility([list(next_point.values())], optimizer._gp, 0)
-
-            if best_point:
-                for _ in range(10000):
-                    possible_point = {}
-                    for key in best_point.keys():
-                        possible_point[key] = np.clip(best_point[key] + np.random.normal(0, config.NEIGHBOUR_SCALE), 0, 1)
-                    possible_point = dict(sorted(possible_point.items()))
-
-                    utility_value = utility.utility([list(possible_point.values())], optimizer._gp, 0)
-                    if utility_value > next_best:
-                        next_best = utility_value
-                        next_point = possible_point
 
         new_learn_genotype = LearnGenotype(brain={})
         for brain_uuid in brain_uuids:
@@ -230,7 +216,6 @@ def learn_genotype(genotype, evaluator, rng):
 
         if best_objective_value is None or objective_value >= best_objective_value:
             best_objective_value = objective_value
-            best_point = next_point
 
         alphas = np.append(alphas, config.ALPHA)
         optimizer.register(params=next_point, target=objective_value)
