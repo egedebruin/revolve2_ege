@@ -166,7 +166,7 @@ def select_survivors_best(
     for individual in offspring_population.individuals:
         individuals.append(
             (individual.genotype, individual.objective_value, individual.survivor_fitness, individual.original_generation))
-    individuals = sorted(individuals, key=lambda x: (-x[2]))
+    individuals = sorted(individuals, key=lambda x: (-x[2], -x[1]))
     survivors = individuals[:config.POPULATION_SIZE]
 
     return Population(
