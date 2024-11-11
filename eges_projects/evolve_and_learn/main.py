@@ -17,10 +17,8 @@ from database_components.experiment import Experiment
 from database_components.generation import Generation
 from database_components.genotype import Genotype
 from database_components.individual import Individual
-from database_components.learn_generation import LearnGeneration
 from database_components.learn_genotype import LearnGenotype
 from database_components.learn_individual import LearnIndividual
-from database_components.learn_population import LearnPopulation
 from database_components.population import Population
 from evaluator import Evaluator
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
@@ -68,7 +66,7 @@ def run_experiment(dbengine: Engine) -> None:
 
     # Create a population of individuals, combining genotype with fitness.
     individuals = []
-    for genotype, objective_value in zip(initial_genotypes, initial_objective_values):
+    for objective_value, genotype in zip(initial_objective_values, initial_genotypes):
         individual = Individual(genotype=genotype, objective_value=objective_value, original_generation=0)
         individuals.append(individual)
     population = Population(
@@ -131,13 +129,13 @@ def learn_population(genotypes, evaluator, dbengine, rng):
     genotypes = []
     for future in futures:
 
-        objective_value, learn_generations = future.result()
+        objective_value, learn_individuals = future.result()
         result_objective_values.append(objective_value)
-        genotypes.append(learn_generations[0].genotype)
+        genotypes.append(learn_individuals[0].morphology_genotype)
 
-        for learn_generation in learn_generations:
+        for learn_individual in learn_individuals:
             with Session(dbengine, expire_on_commit=False) as session:
-                session.add(learn_generation)
+                session.add(learn_individual)
                 session.commit()
     return result_objective_values, genotypes
 
@@ -154,16 +152,7 @@ def learn_genotype(genotype, evaluator, rng):
 
     if len(brain_uuids) == 0:
         empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
-        population = LearnPopulation(
-            individuals=[
-                LearnIndividual(genotype=empty_learn_genotype, objective_value=0)
-            ]
-        )
-        return 0, [LearnGeneration(
-            genotype=genotype,
-            generation_index=0,
-            learn_population=population,
-        )]
+        return 0, [LearnIndividual(morphology_genotype=genotype, genotype=empty_learn_genotype, objective_value=0, generation_index=0)]
 
     pbounds = {}
     for key in brain_uuids:
@@ -180,7 +169,7 @@ def learn_genotype(genotype, evaluator, rng):
     optimizer.set_gp_params(alpha=[], kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
 
     best_objective_value = None
-    learn_generations = []
+    learn_individuals = []
     sorted_inherited_experience = sorted(genotype.inherited_experience, key=lambda x: x[1], reverse=True)
     alphas = np.array([])
 
@@ -222,21 +211,10 @@ def learn_genotype(genotype, evaluator, rng):
         optimizer.set_gp_params(alpha=alphas)
         genotype.experience.append((next_point, objective_value))
 
-        # From the samples and fitnesses, create a population that we can save.
-        population = LearnPopulation(
-            individuals=[
-                LearnIndividual(genotype=new_learn_genotype, objective_value=objective_value)
-            ]
-        )
-        # Make it all into a generation and save it to the database.
-        learn_generation = LearnGeneration(
-            genotype=genotype,
-            generation_index=i,
-            learn_population=population,
-        )
-        learn_generations.append(learn_generation)
+        learn_individual = LearnIndividual(morphology_genotype=genotype, genotype=new_learn_genotype, objective_value=objective_value, generation_index=i)
+        learn_individuals.append(learn_individual)
 
-    return best_objective_value, learn_generations
+    return best_objective_value, learn_individuals
 
 
 def read_args():
@@ -249,6 +227,7 @@ def read_args():
     parser.add_argument("--survivorselect", required=True)
     parser.add_argument("--parentselect", required=True)
     parser.add_argument("--inheritsamples", required=True)
+    parser.add_argument("--inheritalpha", required=False)
     args = parser.parse_args()
     config.NUM_REDO_INHERITED_SAMPLES = int(args.inheritsamples)
     config.INHERIT_SAMPLES = True
@@ -260,9 +239,11 @@ def read_args():
     config.ENVIRONMENT = args.environment
     config.SURVIVOR_SELECT_STRATEGY = args.survivorselect
     config.PARENT_SELECT_STRATEGY = args.parentselect
+    if args.inheritalpha:
+        config.INHERITED_ALPHA = int(args.inheritalpha)
     controllers_string = 'adaptable' if config.CONTROLLERS == -1 else config.CONTROLLERS
     config.DATABASE_FILE = ("learn-" + str(args.learn) + "_controllers-" + str(controllers_string) + "_survivorselect-"
-                            + args.survivorselect + "_parentselect-" + args.parentselect + "_inheritsamples-" + args.inheritsamples + "_environment-"
+                            + args.survivorselect + "_parentselect-" + args.parentselect + "_inheritsamples-" + args.inheritsamples + "_inheritalpha" + str(config.INHERITED_ALPHA) + "_environment-"
                             + args.environment + "_" + str(args.repetition) + ".sqlite")
 
 
