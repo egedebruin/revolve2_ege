@@ -56,7 +56,7 @@ class SineBrainInstance(BrainInstance):
             self.t[i] += dt * config.FREQUENCY
             i += 1
 
-        self.energy -= control_interface.get_actuator_force()
+        # self.energy -= control_interface.get_actuator_force()
 
 
 class SineBrain(Brain):
