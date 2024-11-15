@@ -14,6 +14,7 @@ from genotypes.body_genotype_direct import BodyGenotypeDirect
 from genotypes.body_genotype_cppn import BodyGenotypeCppn
 from genotypes.brain_genotype_simple import BrainGenotype
 from genotypes.brain_genotype_cppn_simple import BrainGenotype as BrainGenotypeCppn
+from genotypes.brain_genotype_cpg import BrainGenotype as BrainGenotypeCpg
 from revolve2.experimentation.database import HasId
 
 

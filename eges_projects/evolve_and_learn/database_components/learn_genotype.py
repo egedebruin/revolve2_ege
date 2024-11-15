@@ -5,6 +5,7 @@ from __future__ import annotations
 from database_components.base import Base
 from genotypes.brain_genotype_simple import BrainGenotype
 from genotypes.brain_genotype_cppn_simple import BrainGenotype as BrainGenotypeCppn
+from genotypes.brain_genotype_cpg import BrainGenotype as BrainGenotypeCpg
 
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot

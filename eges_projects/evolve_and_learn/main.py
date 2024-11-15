@@ -24,6 +24,8 @@ from evaluator import Evaluator
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
 from revolve2.experimentation.rng import make_rng, seed_from_time
+from revolve2.modular_robot.body.base import ActiveHinge
+from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_structure_neighbor
 
 
 def run_experiment(dbengine: Engine) -> None:
@@ -150,11 +152,7 @@ def learn_genotype(genotype, evaluator, rng):
         empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
         return 0, [LearnIndividual(morphology_genotype=genotype, genotype=empty_learn_genotype, objective_value=0, generation_index=0)]
 
-    pbounds = {}
-    for key in brain_uuids:
-        pbounds['amplitude_' + str(key)] = [0, 1]
-        pbounds['phase_' + str(key)] = [0, 1]
-        pbounds['offset_' + str(key)] = [0, 1]
+    pbounds = genotype.get_p_bounds()
 
     optimizer = BayesianOptimization(
         f=None,
@@ -181,24 +179,13 @@ def learn_genotype(genotype, evaluator, rng):
         if i < config.NUM_REDO_INHERITED_SAMPLES and len(sorted_inherited_experience) > 0:
             next_point = sorted_inherited_experience[i][0]
         elif config.EVOLUTIONARY_SEARCH and i == 0:
-            next_point = {}
-            for key in brain_uuids:
-                next_point['amplitude_' + str(key)] = genotype.brain[key][0]
-                next_point['phase_' + str(key)] = genotype.brain[key][1]
-                next_point['offset_' + str(key)] = genotype.brain[key][2]
+            next_point = genotype.get_evolutionary_search_next_point()
         else:
             next_point = optimizer.suggest()
             next_point = dict(sorted(next_point.items()))
 
         new_learn_genotype = LearnGenotype(brain={})
-        for brain_uuid in brain_uuids:
-            new_learn_genotype.brain[brain_uuid] = np.array(
-                [
-                    next_point['amplitude_' + str(brain_uuid)],
-                    next_point['phase_' + str(brain_uuid)],
-                    next_point['offset_' + str(brain_uuid)],
-                ]
-            )
+        new_learn_genotype.next_point_to_brain(next_point, list(genotype.brain.keys()))
         robot = new_learn_genotype.develop(developed_body)
 
         # Evaluate them.
