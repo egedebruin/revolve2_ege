@@ -154,6 +154,7 @@ def learn_genotype(genotype, evaluator, rng):
     for key in brain_uuids:
         pbounds['amplitude_' + str(key)] = [0, 1]
         pbounds['phase_' + str(key)] = [0, 1]
+        pbounds['offset_' + str(key)] = [0, 1]
 
     optimizer = BayesianOptimization(
         f=None,
@@ -184,6 +185,7 @@ def learn_genotype(genotype, evaluator, rng):
             for key in brain_uuids:
                 next_point['amplitude_' + str(key)] = genotype.brain[key][0]
                 next_point['phase_' + str(key)] = genotype.brain[key][1]
+                next_point['offset_' + str(key)] = genotype.brain[key][2]
         else:
             next_point = optimizer.suggest()
             next_point = dict(sorted(next_point.items()))
@@ -194,6 +196,7 @@ def learn_genotype(genotype, evaluator, rng):
                 [
                     next_point['amplitude_' + str(brain_uuid)],
                     next_point['phase_' + str(brain_uuid)],
+                    next_point['offset_' + str(brain_uuid)],
                 ]
             )
         robot = new_learn_genotype.develop(developed_body)

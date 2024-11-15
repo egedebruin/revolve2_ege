@@ -40,7 +40,7 @@ class BrainGenotype(orm.MappedAsDataclass):
             new_uuid = uuid.uuid4()
             if config.CONTROLLERS != -1:
                 new_uuid = uuid.UUID(int=i)
-            brain[new_uuid] = np.array(rng.random(2))
+            brain[new_uuid] = np.array(rng.random(3))
 
         return BrainGenotype(brain=brain)
 
@@ -49,7 +49,7 @@ class BrainGenotype(orm.MappedAsDataclass):
 
     def add_new(self, rng):
         new_uuid = uuid.uuid4()
-        self.brain[new_uuid] = np.array(rng.random(2))
+        self.brain[new_uuid] = np.array(rng.random(3))
         return new_uuid
 
     def remove_unused(self, used_uuids, rng):
@@ -59,8 +59,7 @@ class BrainGenotype(orm.MappedAsDataclass):
             self.brain.pop(remove_item)
 
         if len(self.brain.keys()) == 0:
-            new_uuid = uuid.uuid4()
-            self.brain = {new_uuid: np.array(rng.random(2))}
+            self.add_new(rng)
 
     def mutate_brain(self, rng: np.random.Generator):
         brain = BrainGenotype(brain=self.brain.copy())
@@ -90,14 +89,17 @@ class BrainGenotype(orm.MappedAsDataclass):
 
         amplitudes = []
         phases = []
+        offsets = []
         for active_hinge in active_hinges:
             amplitudes.append(self.brain[active_hinge.map_uuid][0])
             phases.append(self.brain[active_hinge.map_uuid][1] * 2 * math.pi)
+            offsets.append(self.brain[active_hinge.map_uuid][2] * 4 - 2)
 
         brain = SineBrain(
             active_hinges=active_hinges,
             amplitudes=amplitudes,
-            phases=phases
+            phases=phases,
+            offsets=offsets
         )
 
         return brain
