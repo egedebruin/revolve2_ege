@@ -143,10 +143,6 @@ def learn_population(genotypes, evaluator, dbengine, rng):
 def learn_genotype(genotype, evaluator, rng):
     # We get the brain uuids from the developed body, because if it is too big we don't want to learn unused uuids
     developed_body = genotype.develop_body()
-    # brain_uuids = set()
-    # for active_hinge in developed_body.find_modules_of_type(ActiveHinge):
-    #     brain_uuids.add(active_hinge.map_uuid)
-    # brain_uuids = list(brain_uuids)
     brain_uuids = list(genotype.brain.keys())
     genotype.update_brain_parameters(brain_uuids, rng)
 
@@ -183,6 +179,11 @@ def learn_genotype(genotype, evaluator, rng):
         logging.info(f"Learn generation {i + 1} / {config.LEARN_NUM_GENERATIONS + config.NUM_REDO_INHERITED_SAMPLES}.")
         if i < config.NUM_REDO_INHERITED_SAMPLES and len(sorted_inherited_experience) > 0:
             next_point = sorted_inherited_experience[i][0]
+        elif config.EVOLUTIONARY_SEARCH and i == 0:
+            next_point = {}
+            for key in brain_uuids:
+                next_point['amplitude_' + str(key)] = genotype.brain[key][0]
+                next_point['phase_' + str(key)] = genotype.brain[key][1]
         else:
             next_point = optimizer.suggest()
             next_point = dict(sorted(next_point.items()))
@@ -231,9 +232,11 @@ def read_args():
     args = parser.parse_args()
     config.NUM_REDO_INHERITED_SAMPLES = int(args.inheritsamples)
     config.INHERIT_SAMPLES = True
+    config.EVOLUTIONARY_SEARCH = False
     if config.NUM_REDO_INHERITED_SAMPLES == -1:
         config.INHERIT_SAMPLES = False
         config.NUM_REDO_INHERITED_SAMPLES = 0
+        config.EVOLUTIONARY_SEARCH = True
     config.LEARN_NUM_GENERATIONS = int(args.learn) - config.NUM_REDO_INHERITED_SAMPLES
     config.CONTROLLERS = int(args.controllers)
     config.ENVIRONMENT = args.environment
