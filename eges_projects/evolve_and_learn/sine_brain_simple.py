@@ -14,7 +14,7 @@ class SineBrainInstance(BrainInstance):
     t: list[float]
     amplitudes: list[float]
     phases: list[float]
-    offsets: list[float]
+    # offsets: list[float]
     energy: float
 
     def __init__(
@@ -22,7 +22,7 @@ class SineBrainInstance(BrainInstance):
             active_hinges: list[ActiveHinge],
             amplitudes: list[float],
             phases: list[float],
-            offsets: list[float],
+            # offsets: list[float],
     ) -> None:
         """
         Initialize the Object.
@@ -32,7 +32,7 @@ class SineBrainInstance(BrainInstance):
         self.active_hinges = active_hinges
         self.amplitudes = amplitudes
         self.phases = phases
-        self.offsets = offsets
+        # self.offsets = offsets
         self.t = [0.0] * len(active_hinges)
         self.energy = config.ENERGY
 
@@ -52,9 +52,9 @@ class SineBrainInstance(BrainInstance):
         if self.energy < 0:
             return
         i = 0
-        for active_hinge, amplitude, phase, offset in zip(self.active_hinges, self.amplitudes, self.phases, self.offsets):
+        for active_hinge, amplitude, phase in zip(self.active_hinges, self.amplitudes, self.phases):
             phase = phase + active_hinge.reverse_phase
-            target = amplitude * math.sin(self.t[i] + phase) + offset
+            target = amplitude * math.sin(self.t[i] + phase) # + offset
             control_interface.set_active_hinge_target(active_hinge, target)
             self.t[i] += dt * config.FREQUENCY
             i += 1
@@ -68,14 +68,14 @@ class SineBrain(Brain):
     active_hinges: list[ActiveHinge]
     amplitudes: list[float]
     phases: list[float]
-    offsets: list[float]
+    # offsets: list[float]
 
     def __init__(
         self,
         active_hinges: list[ActiveHinge],
         amplitudes: list[float],
         phases: list[float],
-        offsets: list[float],
+        # offsets: list[float],
     ) -> None:
         """
         Initialize the Object.
@@ -85,7 +85,7 @@ class SineBrain(Brain):
         self.active_hinges = active_hinges
         self.amplitudes = amplitudes
         self.phases = phases
-        self.offsets = offsets
+        # self.offsets = offsets
 
     def make_instance(self) -> BrainInstance:
         """
@@ -97,5 +97,5 @@ class SineBrain(Brain):
             active_hinges=self.active_hinges,
             amplitudes=self.amplitudes,
             phases=self.phases,
-            offsets=self.offsets
+            # offsets=self.offsets
         )
