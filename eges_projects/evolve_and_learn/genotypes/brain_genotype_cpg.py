@@ -5,7 +5,6 @@ from genotypes.brain_genotype import BrainGenotype as AbstractBrainGenotype
 
 
 class BrainGenotype(AbstractBrainGenotype):
-    number_of_parameters_per_active_hinge = 3
 
     def develop_brain(self, body: BodyV1):
         cpg_brain = CpgBrain(
