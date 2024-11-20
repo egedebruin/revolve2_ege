@@ -218,7 +218,6 @@ def read_args():
     parser.add_argument("--survivorselect", required=True)
     parser.add_argument("--parentselect", required=True)
     parser.add_argument("--inheritsamples", required=True)
-    parser.add_argument("--mutation", required=False)
     args = parser.parse_args()
     config.NUM_REDO_INHERITED_SAMPLES = int(args.inheritsamples)
     config.INHERIT_SAMPLES = True
@@ -232,11 +231,9 @@ def read_args():
     config.ENVIRONMENT = args.environment
     config.SURVIVOR_SELECT_STRATEGY = args.survivorselect
     config.PARENT_SELECT_STRATEGY = args.parentselect
-    config.MAX_ADD_MODULES = int(args.mutation)
-    config.MAX_DELETE_MODULES = int(args.mutation)
     controllers_string = 'adaptable' if config.CONTROLLERS == -1 else config.CONTROLLERS
     config.DATABASE_FILE = ("learn-" + str(args.learn) + "_controllers-" + str(controllers_string) + "_survivorselect-"
-                            + args.survivorselect + "_parentselect-" + args.parentselect + "_inheritsamples-" + args.inheritsamples + "_mutation" + args.mutation + "_environment-"
+                            + args.survivorselect + "_parentselect-" + args.parentselect + "_inheritsamples-" + args.inheritsamples + "_environment-"
                             + args.environment + "_" + str(args.repetition) + ".sqlite")
 
 
@@ -244,7 +241,8 @@ def main() -> None:
     """Run the program."""
     if config.READ_ARGS:
         read_args()
-    config.NUM_GENERATIONS = int((config.FUNCTION_EVALUATIONS / (int(config.LEARN_NUM_GENERATIONS + config.NUM_REDO_INHERITED_SAMPLES) * config.OFFSPRING_SIZE)))
+    config.NUM_GENERATIONS = (int((config.FUNCTION_EVALUATIONS / (int(config.LEARN_NUM_GENERATIONS + config.NUM_REDO_INHERITED_SAMPLES) * config.OFFSPRING_SIZE)))
+                              - int(config.POPULATION_SIZE / config.OFFSPRING_SIZE))
 
     # Set up logging.
     setup_logging(file_name="log.txt")
