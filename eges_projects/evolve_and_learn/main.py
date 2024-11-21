@@ -2,6 +2,7 @@
 import concurrent.futures
 import logging
 import time
+import uuid
 from argparse import ArgumentParser
 
 import numpy as np
@@ -152,11 +153,9 @@ def learn_genotype(genotype, evaluator, rng):
         empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
         return 0, [LearnIndividual(morphology_genotype=genotype, genotype=empty_learn_genotype, objective_value=0, generation_index=0)]
 
-    pbounds = genotype.get_p_bounds()
-
     optimizer = BayesianOptimization(
         f=None,
-        pbounds=pbounds,
+        pbounds=genotype.get_p_bounds(),
         allow_duplicate_points=True,
         random_state=int(rng.integers(low=0, high=2**32)),
         acquisition_function=acquisition.UpperConfidenceBound(kappa=config.KAPPA)
@@ -165,7 +164,7 @@ def learn_genotype(genotype, evaluator, rng):
 
     best_objective_value = None
     learn_individuals = []
-    sorted_inherited_experience = sorted(genotype.inherited_experience, key=lambda x: x[1], reverse=True)
+    sorted_inherited_experience = genotype.update_values_with_genotype(sorted(genotype.inherited_experience, key=lambda x: x[1], reverse=True))
     alphas = np.array([])
 
     if config.INHERIT_SAMPLES and config.NUM_REDO_INHERITED_SAMPLES == 0:

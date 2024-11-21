@@ -1,4 +1,6 @@
 import math
+import uuid
+
 import numpy as np
 from sine_brain_simple import SineBrain
 from revolve2.modular_robot.body.base import ActiveHinge
@@ -55,3 +57,27 @@ class BrainGenotype(AbstractBrainGenotype):
                     next_point['offset_' + str(brain_uuid)],
                 ]
             )
+
+    def update_values_with_genotype(self, sorted_inherited_experience):
+        current_genotype_keys = [str(key) for key in self.brain.keys()]
+
+        for values, fitness in sorted_inherited_experience:
+            keys_to_remove = []
+            unique_keys = set()
+
+            for full_key, value in values.items():
+                real_key = full_key.split("_")[1]
+                unique_keys.add(real_key)
+                if real_key not in current_genotype_keys:
+                    keys_to_remove.append(full_key)
+
+            for key in keys_to_remove:
+                del values[key]
+
+            for genotype_key in current_genotype_keys:
+                if genotype_key not in unique_keys:
+                    brain_data = self.brain[uuid.UUID(genotype_key)]
+                    values[f'amplitude_{genotype_key}'] = brain_data[0]
+                    values[f'phase_{genotype_key}'] = brain_data[1]
+                    values[f'offset_{genotype_key}'] = brain_data[2]
+        return sorted_inherited_experience

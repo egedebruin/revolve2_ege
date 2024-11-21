@@ -98,6 +98,10 @@ class BrainGenotype(orm.MappedAsDataclass):
     def next_point_to_brain(self, next_point, brain_uuids):
         pass
 
+    @abstractmethod
+    def update_values_with_genotype(self, sorted_inherited_experience):
+        pass
+
 
 @event.listens_for(BrainGenotype, "before_update", propagate=True)
 @event.listens_for(BrainGenotype, "before_insert", propagate=True)
