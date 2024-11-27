@@ -46,7 +46,7 @@ class BrainGenotype(AbstractBrainGenotype):
     def update_values_with_genotype(self, sorted_inherited_experience):
         current_genotype_keys = [str(key) for key in self.brain.keys()]
 
-        for values, fitness in sorted_inherited_experience:
+        for values, _, _ in sorted_inherited_experience:
             keys_to_remove = []
             unique_keys = set()
 

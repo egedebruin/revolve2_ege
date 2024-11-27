@@ -164,7 +164,8 @@ def learn_genotype(genotype, evaluator, rng):
 
     best_objective_value = None
     learn_individuals = []
-    sorted_inherited_experience = genotype.update_values_with_genotype(sorted(genotype.inherited_experience, key=lambda x: x[1], reverse=True))
+    inherited_experience = [experience for experience in genotype.inherited_experience if experience[2] == 1]
+    sorted_inherited_experience = genotype.update_values_with_genotype(sorted(inherited_experience, key=lambda x: x[1], reverse=True))
     alphas = np.array([])
 
     if config.INHERIT_SAMPLES and config.NUM_REDO_INHERITED_SAMPLES == 0:
