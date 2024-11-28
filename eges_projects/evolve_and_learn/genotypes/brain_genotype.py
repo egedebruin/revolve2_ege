@@ -35,7 +35,9 @@ class BrainGenotype(orm.MappedAsDataclass):
 
         brain = {}
         for i in range(number_of_brains):
-            new_uuid = uuid.uuid4()
+            random_int = (int(rng.integers(0, 2 ** 64, dtype=np.uint64)) << 64) | int(
+                rng.integers(0, 2 ** 64, dtype=np.uint64))
+            new_uuid = uuid.UUID(int=random_int)
             if config.CONTROLLERS != -1:
                 new_uuid = uuid.UUID(int=i)
             brain[new_uuid] = np.array(rng.random(cls.number_of_parameters_per_active_hinge))
@@ -46,7 +48,9 @@ class BrainGenotype(orm.MappedAsDataclass):
         pass
 
     def add_new(self, rng):
-        new_uuid = uuid.uuid4()
+        random_int = (int(rng.integers(0, 2 ** 64, dtype=np.uint64)) << 64) | int(
+            rng.integers(0, 2 ** 64, dtype=np.uint64))
+        new_uuid = uuid.UUID(int=random_int)
         self.brain[new_uuid] = np.array(rng.random(self.number_of_parameters_per_active_hinge))
         return new_uuid
 

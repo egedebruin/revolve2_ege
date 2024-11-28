@@ -2,17 +2,19 @@
 import concurrent.futures
 import logging
 import time
-import uuid
 from argparse import ArgumentParser
 
 import numpy as np
-from bayes_opt import BayesianOptimization, acquisition
+from bayes_opt import acquisition, BayesianOptimization
 from sklearn.gaussian_process.kernels import Matern
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 import config
 import selection
+# from custom_bayesian_optimization import CustomBayesianOptimization
 from database_components.base import Base
 from database_components.experiment import Experiment
 from database_components.generation import Generation
@@ -25,8 +27,6 @@ from evaluator import Evaluator
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
 from revolve2.experimentation.rng import make_rng, seed_from_time
-from revolve2.modular_robot.body.base import ActiveHinge
-from revolve2.modular_robot.brain.cpg import active_hinges_to_cpg_network_structure_neighbor
 
 
 def run_experiment(dbengine: Engine) -> None:
@@ -153,13 +153,26 @@ def learn_genotype(genotype, evaluator, rng):
         empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
         return 0, [LearnIndividual(morphology_genotype=genotype, genotype=empty_learn_genotype, objective_value=0, generation_index=0)]
 
+    if len(genotype.inherited_coefficients) == 0:
+        genotype.inherited_coefficients = []
+        genotype.inherited_intercept = -1
+
     optimizer = BayesianOptimization(
         f=None,
         pbounds=genotype.get_p_bounds(),
         allow_duplicate_points=True,
         random_state=int(rng.integers(low=0, high=2**32)),
-        acquisition_function=acquisition.UpperConfidenceBound(kappa=config.KAPPA)
+        acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32))
     )
+    # optimizer = CustomBayesianOptimization(
+    #     f=None,
+    #     pbounds=genotype.get_p_bounds(),
+    #     allow_duplicate_points=True,
+    #     random_state=int(rng.integers(low=0, high=2**32)),
+    #     acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32)),
+    #     coefficients=genotype.inherited_coefficients,
+    #     intercept=genotype.inherited_intercept
+    # )
     optimizer.set_gp_params(alpha=[], kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
 
     best_objective_value = None
@@ -180,6 +193,7 @@ def learn_genotype(genotype, evaluator, rng):
             next_point = sorted_inherited_experience[i][0]
         elif config.EVOLUTIONARY_SEARCH and i == 0:
             next_point = genotype.get_evolutionary_search_next_point()
+            next_point = dict(sorted(next_point.items()))
         else:
             next_point = optimizer.suggest()
             next_point = dict(sorted(next_point.items()))
@@ -204,6 +218,17 @@ def learn_genotype(genotype, evaluator, rng):
 
         learn_individual = LearnIndividual(morphology_genotype=genotype, genotype=new_learn_genotype, objective_value=objective_value, generation_index=i)
         learn_individuals.append(learn_individual)
+
+    optimizer.suggest()
+
+    poly = PolynomialFeatures(2)
+    model = LinearRegression()
+
+    x_poly = poly.fit_transform(optimizer._gp.X_train_)
+    model.fit(x_poly, optimizer._gp.y_train_)
+
+    genotype.coefficients = model.coef_
+    genotype.intercept = model.intercept_
 
     return best_objective_value, learn_individuals
 

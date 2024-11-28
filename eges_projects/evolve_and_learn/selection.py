@@ -221,9 +221,14 @@ def generate_offspring(rng, population):
         parent_genotype = population.individuals[parent_i].genotype
         child_genotype = parent_genotype.mutate(rng)
         child_genotype.parent_1_genotype_id = population.individuals[parent_i].genotype.id
+
         experience = [(a, b, 1) for a, b in parent_genotype.experience]
         inherited_experience = [(a, b, c + 1) for a, b, c in parent_genotype.inherited_experience]
         child_genotype.inherited_experience = experience + inherited_experience
+
+        child_genotype.inherited_coefficients = parent_genotype.coefficients
+        child_genotype.inherited_intercept = parent_genotype.intercept
+
         offspring_genotypes.append(child_genotype)
     return offspring_genotypes
 

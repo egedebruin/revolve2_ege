@@ -24,6 +24,10 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
     __tablename__ = "genotype"
     experience: list = field(default_factory=lambda: [])
     inherited_experience: list = field(default_factory=lambda: [])
+    coefficients: list = field(default_factory=lambda: [])
+    inherited_coefficients: list = field(default_factory=lambda: [])
+    intercept: float = field(default_factory=lambda: 0.0)
+    inherited_intercept: float = field(default_factory=lambda: 0.0)
     parent_1_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
     parent_2_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
     mutation_parameter: orm.Mapped[float] = orm.mapped_column(nullable=True, default=None)
