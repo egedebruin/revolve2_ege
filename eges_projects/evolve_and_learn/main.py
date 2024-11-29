@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 import config
 import selection
-# from custom_bayesian_optimization import CustomBayesianOptimization
+from custom_bayesian_optimization import CustomBayesianOptimization
 from database_components.base import Base
 from database_components.experiment import Experiment
 from database_components.generation import Generation
@@ -153,36 +153,52 @@ def learn_genotype(genotype, evaluator, rng):
         empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
         return 0, [LearnIndividual(morphology_genotype=genotype, genotype=empty_learn_genotype, objective_value=0, generation_index=0)]
 
-    if len(genotype.inherited_coefficients) == 0:
-        genotype.inherited_coefficients = []
-        genotype.inherited_intercept = -1
-
-    optimizer = BayesianOptimization(
-        f=None,
-        pbounds=genotype.get_p_bounds(),
-        allow_duplicate_points=True,
-        random_state=int(rng.integers(low=0, high=2**32)),
-        acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32))
-    )
-    # optimizer = CustomBayesianOptimization(
-    #     f=None,
-    #     pbounds=genotype.get_p_bounds(),
-    #     allow_duplicate_points=True,
-    #     random_state=int(rng.integers(low=0, high=2**32)),
-    #     acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32)),
-    #     coefficients=genotype.inherited_coefficients,
-    #     intercept=genotype.inherited_intercept
-    # )
-    optimizer.set_gp_params(alpha=[], kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
-
     best_objective_value = None
     learn_individuals = []
     inherited_experience = [experience for experience in genotype.inherited_experience if experience[2] == 1]
-    sorted_inherited_experience = genotype.update_values_with_genotype(sorted(inherited_experience, key=lambda x: x[1], reverse=True))
+    sorted_inherited_experience = genotype.update_values_with_genotype(
+        sorted(inherited_experience, key=lambda x: x[1], reverse=True))
     alphas = np.array([])
 
+    if len(sorted_inherited_experience) == 0:
+        optimizer = BayesianOptimization(
+            f=None,
+            pbounds=genotype.get_p_bounds(),
+            allow_duplicate_points=True,
+            random_state=int(rng.integers(low=0, high=2**32)),
+            acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32))
+        )
+    else:
+        bonus_optimizer = BayesianOptimization(
+            f=None,
+            pbounds=genotype.get_p_bounds(),
+            allow_duplicate_points=True,
+            random_state=int(rng.integers(low=0, high=2**32)),
+            acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32))
+        )
+        bonus_optimizer.set_gp_params(alpha=0.1, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
+        for inherited_experience_sample, objective_value, inheritance_number in sorted_inherited_experience:
+            bonus_optimizer.register(params=inherited_experience_sample, target=objective_value)
+        bonus_optimizer.suggest()
+        poly = PolynomialFeatures(2)
+        model = LinearRegression()
+        x_poly = poly.fit_transform(bonus_optimizer._gp.X_train_)
+        model.fit(x_poly, bonus_optimizer._gp.y_train_)
+        coefficients = model.coef_
+        intercept = model.intercept_
+        optimizer = CustomBayesianOptimization(
+            f=None,
+            pbounds=genotype.get_p_bounds(),
+            allow_duplicate_points=True,
+            random_state=int(rng.integers(low=0, high=2**32)),
+            acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32)),
+            coefficients=coefficients,
+            intercept=intercept
+        )
+
+    optimizer.set_gp_params(alpha=[], kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
     if config.INHERIT_SAMPLES and config.NUM_REDO_INHERITED_SAMPLES == 0:
-        for inherited_experience_sample, objective_value in sorted_inherited_experience:
+        for inherited_experience_sample, objective_value, inheritance_number in sorted_inherited_experience:
             alphas = np.append(alphas, config.INHERITED_ALPHA)
             optimizer.register(params=inherited_experience_sample, target=objective_value)
             optimizer.set_gp_params(alpha=alphas)
@@ -219,17 +235,6 @@ def learn_genotype(genotype, evaluator, rng):
         learn_individual = LearnIndividual(morphology_genotype=genotype, genotype=new_learn_genotype, objective_value=objective_value, generation_index=i)
         learn_individuals.append(learn_individual)
 
-    optimizer.suggest()
-
-    poly = PolynomialFeatures(2)
-    model = LinearRegression()
-
-    x_poly = poly.fit_transform(optimizer._gp.X_train_)
-    model.fit(x_poly, optimizer._gp.y_train_)
-
-    genotype.coefficients = model.coef_
-    genotype.intercept = model.intercept_
-
     return best_objective_value, learn_individuals
 
 
@@ -250,7 +255,7 @@ def read_args():
     if config.NUM_REDO_INHERITED_SAMPLES == -1:
         config.INHERIT_SAMPLES = False
         config.NUM_REDO_INHERITED_SAMPLES = 0
-        config.EVOLUTIONARY_SEARCH = True
+        config.EVOLUTIONARY_SEARCH = False
     config.LEARN_NUM_GENERATIONS = int(args.learn) - config.NUM_REDO_INHERITED_SAMPLES
     config.CONTROLLERS = int(args.controllers)
     config.ENVIRONMENT = args.environment

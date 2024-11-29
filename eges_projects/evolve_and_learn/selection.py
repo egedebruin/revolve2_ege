@@ -226,9 +226,6 @@ def generate_offspring(rng, population):
         inherited_experience = [(a, b, c + 1) for a, b, c in parent_genotype.inherited_experience]
         child_genotype.inherited_experience = experience + inherited_experience
 
-        child_genotype.inherited_coefficients = parent_genotype.coefficients
-        child_genotype.inherited_intercept = parent_genotype.intercept
-
         offspring_genotypes.append(child_genotype)
     return offspring_genotypes
 
