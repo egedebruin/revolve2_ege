@@ -30,7 +30,7 @@ class CustomGaussianProcessRegressor(GaussianProcessRegressor):
             coefficients=None,
             intercept=None,
     ):
-        super().__init__(kernel, alpha, optimizer, n_restarts_optimizer, normalize_y, copy_X_train, n_targets, random_state)
+        super().__init__(kernel=kernel, alpha=alpha, optimizer=optimizer, n_restarts_optimizer=n_restarts_optimizer, normalize_y=normalize_y, copy_X_train=copy_X_train, n_targets=n_targets, random_state=random_state)
         self.coefficients = coefficients
         self.intercept = intercept
 
