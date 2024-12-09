@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 import config
 import selection
 from custom_bayesian_optimization import CustomBayesianOptimization
+from custom_upper_confidence_bound import CustomUpperConfidenceBound
 from database_components.base import Base
 from database_components.experiment import Experiment
 from database_components.generation import Generation
@@ -191,7 +192,7 @@ def learn_genotype(genotype, evaluator, rng):
             pbounds=genotype.get_p_bounds(),
             allow_duplicate_points=True,
             random_state=int(rng.integers(low=0, high=2**32)),
-            acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32)),
+            acquisition_function=CustomUpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32)),
             coefficients=coefficients,
             intercept=intercept
         )
