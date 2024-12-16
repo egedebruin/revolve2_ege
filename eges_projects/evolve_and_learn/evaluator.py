@@ -6,8 +6,6 @@ from pyrr import Vector3
 
 import config
 
-from revolve2.ci_group import fitness_functions, terrains
-from revolve2.ci_group.simulation_parameters import make_standard_batch_parameters
 from revolve2.modular_robot import ModularRobot
 from revolve2.modular_robot.body.base import Body
 from revolve2.modular_robot_simulation import (
@@ -17,6 +15,9 @@ from revolve2.modular_robot_simulation import (
 )
 from revolve2.simulation.scene import Pose
 from revolve2.simulators.mujoco_simulator import LocalSimulator
+
+from revolve2.standards import terrains, fitness_functions
+from revolve2.standards.simulation_parameters import make_standard_batch_parameters
 
 
 class Evaluator:
@@ -57,7 +58,7 @@ class Evaluator:
     def evaluate(
         self,
         robot: ModularRobot,
-    ) -> npt.NDArray[np.float_]:
+    ) -> float:
         """
         Evaluate multiple robots.
 

@@ -7,9 +7,10 @@ from pyrr import Vector3
 import config
 from genotypes.body_genotype import BodyGenotype
 from genotypes.brain_genotype_simple import BrainGenotype
-from revolve2.ci_group.genotypes.cppnwin.modular_robot.v1 import BodyGenotypeOrmV1
 from revolve2.modular_robot.body.base import ActiveHinge
 from revolve2.modular_robot.body.v1 import BodyV1
+
+from revolve2.standards.genotypes.cppnwin.modular_robot.v1 import BodyGenotypeOrmV1
 
 
 class BodyGenotypeCppn(BodyGenotypeOrmV1, BodyGenotype):
