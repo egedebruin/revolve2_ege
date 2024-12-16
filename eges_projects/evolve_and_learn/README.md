@@ -25,6 +25,6 @@ evolving robots, showing that evaluating according to function
 evaluations versus according to generations of evolution can give
 different conclusions.
 
-[Link to playlist](https://www.youtube.com/playlist?list=PL_uDzdHnUKPoOueT6LCqIe208O5ZBM-CJ) of best performing robots. 
+[Link to playlist](https://www.youtube.com/playlist?list=PL_uDzdHnUKPoOueT6LCqIe208O5ZBM-CJ) of best performing robots. [Link to data](https://zenodo.org/records/14501099).
 
 See core folder of this repository for installation instructions.
