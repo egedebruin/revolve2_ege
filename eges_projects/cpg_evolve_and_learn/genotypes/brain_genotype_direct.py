@@ -5,7 +5,6 @@ import numpy as np
 from sqlalchemy import orm
 
 from revolve2.modular_robot.body.v1 import BodyV1, ActiveHingeV1
-from revolve2.modular_robot.brain import Brain
 from revolve2.modular_robot.brain.cpg import BrainCpgNetworkStatic, active_hinges_to_cpg_network_structure_neighbor
 
 
@@ -38,7 +37,7 @@ class BrainGenotype(orm.MappedAsDataclass):
 
 
     @classmethod
-    def crossover_brain(cls, parent1, parent2):
+    def crossover_brain(cls, parent1, parent2, rng):
         return BrainGenotype(brain=copy(parent1.brain))
 
     def develop_brain(self, body):

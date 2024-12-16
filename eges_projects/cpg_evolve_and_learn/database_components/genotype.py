@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+from copy import copy
+
 import multineat
 import numpy as np
 import sqlalchemy.orm as orm
 
 from revolve2.ci_group.genotypes.cppnwin.modular_robot.v1 import BodyGenotypeOrmV1
+from revolve2.ci_group.genotypes.cppnwin.modular_robot import BrainGenotypeCpgOrm
 from .base import Base
 
-from database_components.brain_genotype import BrainGenotype
+from genotypes.brain_genotype_direct import BrainGenotype
+from genotypes.body_genotype_direct_asym import BodyGenotypeDirect
 from revolve2.experimentation.database import HasId
 
 
@@ -19,6 +23,8 @@ class Genotype(Base, HasId, BodyGenotypeOrmV1, BrainGenotype):
     __tablename__ = "genotype"
     parent_1_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
     parent_2_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
+    innov_db_brain = None
+    best_population = []
 
     @classmethod
     def initialize(
@@ -36,7 +42,9 @@ class Genotype(Base, HasId, BodyGenotypeOrmV1, BrainGenotype):
         """
         body = cls.random_body(innov_db_body, rng)
 
-        return Genotype(body=body.body, brain={})
+        genotype = Genotype(body=body.body, brain={})
+        #genotype.innov_db_brain = multineat.InnovationDatabase()
+        return genotype
 
     def mutate(
         self,
@@ -54,9 +62,9 @@ class Genotype(Base, HasId, BodyGenotypeOrmV1, BrainGenotype):
         :returns: A mutated copy of the provided genotype.
         """
         body = self.mutate_body(innov_db_body, rng)
-        brain = self.mutate_brain(rng)
 
-        genotype = Genotype(body=body.body, brain=brain.brain)
+        genotype = Genotype(body=body.body, brain=copy(self.brain))
+        genotype.innov_db_brain = self.innov_db_brain
         return genotype
 
     @classmethod
@@ -75,6 +83,6 @@ class Genotype(Base, HasId, BodyGenotypeOrmV1, BrainGenotype):
         :returns: A newly created genotype.
         """
         body = cls.crossover_body(parent1, parent2, rng)
-        brain = cls.crossover_brain(parent1, parent2)
+        brain = cls.crossover_brain(parent1, parent2, rng)
 
         return Genotype(body=body.body, brain=brain.brain)

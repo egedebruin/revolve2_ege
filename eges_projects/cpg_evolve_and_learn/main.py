@@ -195,6 +195,38 @@ def learn_genotype(genotype: Genotype, evaluator, rng: np.random.Generator):
 
     return best_objective_value, best_individual, learn_individuals
 
+def learn_genotype_cppn(genotype: Genotype, evaluator, rng: np.random.Generator):
+    developed_body = genotype.develop_body()
+    learn_individuals = []
+    population = []
+    next_brains = []
+    for individual in genotype.best_population:
+        next_brains.append(individual.genotype.brain)
+    best_individual = None
+    best_objective_value = None
+
+    for i in range(config.LEARN_NUM_GENERATIONS):
+        for next_brain in next_brains:
+            objective_value, new_learn_genotype = run_brain(developed_body, next_brain, evaluator)
+            learn_individual = LearnIndividual(morphology_genotype=genotype, genotype=new_learn_genotype,
+                                               objective_value=objective_value, generation_index=i + 1)
+
+            if best_objective_value is None or objective_value >= best_objective_value:
+                best_objective_value = objective_value
+                best_individual = learn_individual
+
+            learn_individuals.append(learn_individual)
+            population.append(learn_individual)
+        population = sorted(population, key=lambda t: t.objective_value, reverse=True)[:config.LEARN_POPULATION_SIZE]
+
+        next_brains = []
+        for j in range(config.LEARN_POPULATION_SIZE):
+            continue
+
+
+    best_individual.morphology_genotype.best_population = population
+    return best_objective_value, best_individual, learn_individuals
+
 def run_brain(developed_body, brain, evaluator):
     new_learn_genotype = LearnGenotype(brain=brain)
     robot = new_learn_genotype.develop(developed_body)

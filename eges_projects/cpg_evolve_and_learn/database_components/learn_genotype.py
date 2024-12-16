@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from database_components.base import Base
-from database_components.brain_genotype import BrainGenotype
+from genotypes.brain_genotype_direct import BrainGenotype
+from revolve2.ci_group.genotypes.cppnwin.modular_robot import BrainGenotypeCpgOrm
 
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot
