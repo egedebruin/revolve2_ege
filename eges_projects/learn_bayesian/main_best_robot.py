@@ -25,13 +25,13 @@ from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.rng import seed_from_time, make_rng
 
 
-def run_experiment(i, genotype, old_file):
+def run_experiment():
     logging.info("----------------")
     logging.info("Start experiment")
 
     # Open the database, only if it does not already exists.
     dbengine = open_database_sqlite(
-        "results/after_learn_2309/" + old_file + "_" + str(i+1) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
+        "test.sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
     )
     # Create the structure of the database.
     Base.metadata.create_all(dbengine)
@@ -56,6 +56,8 @@ def run_experiment(i, genotype, old_file):
 
     pbounds = {}
 
+    genotype = body_getter.get_best_genotype("../evolve_and_learn/results/2309/learn-1_evosearch-1_controllers-adaptable_survivorselect-best_parentselect-tournament_environment-noisy_1.sqlite")[0]
+
     for uuid in genotype.brain.keys():
         pbounds['amplitude_' + str(uuid)] = [0, 1]
         pbounds['phase_' + str(uuid)] = [0, 1]
@@ -63,10 +65,11 @@ def run_experiment(i, genotype, old_file):
     optimizer = BayesianOptimization(
         f=None,
         pbounds=pbounds,
-        allow_duplicate_points=True,
+        allow_duplicate_points=False,
         random_state=int(rng.integers(low=0, high=2 ** 32))
     )
-    optimizer.set_gp_params(alpha=config.ALPHA, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds=(config.LENGTH_SCALE - 0.01, config.LENGTH_SCALE + 0.01)))
+    alpha = np.array([])
+    optimizer.set_gp_params(alpha=alpha, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
     utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
 
     # Run cma for the defined number of generations.
@@ -89,16 +92,16 @@ def run_experiment(i, genotype, old_file):
             bo_utility = utility.utility([list(bo_point.values())], optimizer._gp, 0)
             next_point = {}
             next_best = 0
-            for _ in range(10000):
-                possible_point = {}
-                for key in best_point.keys():
-                    possible_point[key] = best_point[key] + np.random.normal(0, config.NEIGHBOUR_SCALE)
-                possible_point = dict(sorted(possible_point.items()))
-
-                utility_value = utility.utility([list(possible_point.values())], optimizer._gp, 0)
-                if utility_value > next_best:
-                    next_best = utility_value
-                    next_point = possible_point
+            # for _ in range(10000):
+            #     possible_point = {}
+            #     for key in best_point.keys():
+            #         possible_point[key] = best_point[key] + np.random.normal(0, config.NEIGHBOUR_SCALE)
+            #     possible_point = dict(sorted(possible_point.items()))
+            #
+            #     utility_value = utility.utility([list(possible_point.values())], optimizer._gp, 0)
+            #     if utility_value > next_best:
+            #         next_best = utility_value
+            #         next_point = possible_point
             if bo_utility >= next_best:
                 next_point = bo_point
 
@@ -119,6 +122,8 @@ def run_experiment(i, genotype, old_file):
             best_point = next_point
 
         optimizer.register(params=next_point, target=fitness)
+        alpha = np.append(alpha, 0.5)
+        optimizer.set_gp_params(alpha=alpha)
         print(f"Fitness: {fitness}")
 
         population = Population(
@@ -168,7 +173,7 @@ def run_experiments():
 def main() -> None:
     """Run the program."""
     # Set up logging.
-    run_experiments()
+    run_experiment()
 
 
 if __name__ == "__main__":

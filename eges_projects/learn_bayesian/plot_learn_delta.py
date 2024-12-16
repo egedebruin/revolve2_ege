@@ -16,7 +16,7 @@ def get_df(learn, evosearch, controllers, survivor_select, environment, new_envi
     database_name = f"learn-{learn}_evosearch-{evosearch}_controllers-{controllers}_select-{survivor_select}_environment-{environment}.*{new_environment}.*"
     regex = re.compile(database_name)
     print(database_name)
-    files = [file for file in os.listdir("results/after_learn") if regex.match(file)]
+    files = [file for file in os.listdir("results/after_learn_all") if regex.match(file)]
     if len(files) == 0:
         return None
     dfs = []
@@ -56,11 +56,11 @@ def main():
 
                 # Filter out the rows corresponding to the two parts globally before grouping
                 random_part = df[df['generation_index'] < 30]
-                last_part = df[df['generation_index'] >= 270]
+                last_part = df[df['generation_index'] >= 30]
 
                 # Find the max fitness for each experiment_id in both parts
-                random_part = random_part.groupby('experiment_id')['fitness'].mean()
-                last_part = last_part.groupby('experiment_id')['fitness'].mean()
+                random_part = random_part.groupby('experiment_id')['fitness'].max()
+                last_part = last_part.groupby('experiment_id')['fitness'].max()
 
                 # Calculate the learning deltas by subtracting random_part_max from last_part_max
                 vp = ax[i][j].violinplot((last_part - random_part).tolist(), showmeans=True)
@@ -71,7 +71,7 @@ def main():
                     body.set_edgecolor(color)
 
                 # Customize the appearance of cmins, cmaxes, cbars, and cmeans
-                for part_name, line_width in zip(['cmins', 'cmaxes', 'cbars', 'cmeans'], [2, 2, 2, 1]):
+                for part_name, line_width in zip(['cmins', 'cmaxes', 'cbars', 'cmeans'], [3, 3, 3, 1]):
                     vp[part_name].set_edgecolor(color)
                     vp[part_name].set_linewidth(line_width)
 

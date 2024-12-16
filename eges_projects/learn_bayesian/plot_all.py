@@ -16,7 +16,7 @@ def get_df(learn, evosearch, controllers, survivor_select, environment, new_envi
     database_name = f"learn-{learn}_evosearch-{evosearch}_controllers-{controllers}_select-{survivor_select}_environment-{environment}.*{new_environment}.*"
     regex = re.compile(database_name)
     print(database_name)
-    files = [file for file in os.listdir("results/after_learn") if regex.match(file)]
+    files = [file for file in os.listdir("results/after_learn_all") if regex.match(file)]
     if len(files) == 0:
         return None
     dfs = []
