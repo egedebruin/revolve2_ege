@@ -2,6 +2,7 @@ import os
 
 import pandas
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from database_components.genotype import Genotype
 from database_components.individual import Individual
@@ -12,9 +13,9 @@ from sqlalchemy import select
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 
 
-def get_all_genotypes(learn, environment):
-    folder = "results/2908"
-    database_name = f"learn-{learn}_evosearch-1_controllers-adaptable_select-tournament_environment-{environment}"
+def get_all_genotypes(learn, survivor_select):
+    folder = "results/2309"
+    database_name = f"learn-{learn}_evosearch-1_controllers-adaptable_survivorselect-{survivor_select}_parentselect-tournament_environment-noisy"
     print(database_name)
     files = [file for file in os.listdir(folder) if file.startswith(database_name)]
     if len(files) == 0:
@@ -49,23 +50,32 @@ def get_origin_id(genotype_id, df_experiment):
 
 
 def main():
-    for learn in ['1', '30']:
-        for environment in ['noisy']:
-            df = get_all_genotypes(learn, environment)
+    result = {
+        'learn': [],
+        'survivor_select': [],
+        'generation': [],
+        'experiment_id': [],
+        'average_number_of_origin_ids': [],
+    }
+    for learn in ['30']:
+        for survivor_select in ['best', 'newest']:
+            df = get_all_genotypes(learn, survivor_select)
 
             experiments = df['experiment_id'].nunique()
             for experiment_id in range(1, experiments + 1):
                 df_experiment = df.loc[df['experiment_id'] == experiment_id]
-                average_origin_ids = []
-                for generation_id in range(50):
+                for generation_id in range(166):
                     df_generation = df_experiment.loc[df_experiment['generation_index'] == generation_id]
                     genotype_ids = list(df_generation['id'])
                     origin_ids = []
                     for genotype_id in genotype_ids:
                         origin_ids.append(get_origin_id(genotype_id, df_experiment))
-                    average_origin_ids.append(len(set(origin_ids)))
-                plt.plot(average_origin_ids)
-            plt.show()
+                    result['learn'].append(learn)
+                    result['survivor_select'].append(survivor_select)
+                    result['generation'].append(generation_id)
+                    result['experiment_id'].append(experiment_id)
+                    result['average_number_of_origin_ids'].append(len(set(origin_ids)))
+    pd.DataFrame(result).to_csv("results/first-parent-2309-30.csv", index=False)
 
 
 if __name__ == '__main__':
