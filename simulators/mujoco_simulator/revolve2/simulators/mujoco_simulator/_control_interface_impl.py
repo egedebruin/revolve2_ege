@@ -41,8 +41,10 @@ class ControlInterfaceImpl(ControlInterface):
         assert (
             maybe_hinge_joint_mujoco is not None
         ), "Hinge joint does not exist in this scene."
+
         # Set position target
         self._data.ctrl[maybe_hinge_joint_mujoco.ctrl_index_position] = position
+
         # Set velocity target
         self._data.ctrl[maybe_hinge_joint_mujoco.ctrl_index_velocity] = 0.0
 
