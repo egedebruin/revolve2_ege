@@ -161,40 +161,25 @@ def learn_genotype(genotype, evaluator, rng):
         sorted(inherited_experience, key=lambda x: x[1], reverse=True))
     alphas = np.array([])
 
-    if len(sorted_inherited_experience) == 0:
-        optimizer = BayesianOptimization(
-            f=None,
-            pbounds=genotype.get_p_bounds(),
-            allow_duplicate_points=True,
-            random_state=int(rng.integers(low=0, high=2**32)),
-            acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32))
-        )
-    else:
-        bonus_optimizer = BayesianOptimization(
-            f=None,
-            pbounds=genotype.get_p_bounds(),
-            allow_duplicate_points=True,
-            random_state=int(rng.integers(low=0, high=2**32)),
-            acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32))
-        )
-        bonus_optimizer.set_gp_params(alpha=0.1, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
-        for inherited_experience_sample, objective_value, inheritance_number in sorted_inherited_experience:
-            bonus_optimizer.register(params=inherited_experience_sample, target=objective_value)
-        bonus_optimizer.suggest()
-        poly = PolynomialFeatures(2)
-        model = LinearRegression()
-        x_poly = poly.fit_transform(bonus_optimizer._gp.X_train_)
-        model.fit(x_poly, bonus_optimizer._gp.y_train_)
-        coefficients = model.coef_
-        intercept = model.intercept_
+    if len(sorted_inherited_experience) > 0 and config.BONUS:
+        coefficients, intercept = get_prior_information(genotype, rng, sorted_inherited_experience)
         optimizer = CustomBayesianOptimization(
             f=None,
             pbounds=genotype.get_p_bounds(),
             allow_duplicate_points=True,
-            random_state=int(rng.integers(low=0, high=2**32)),
-            acquisition_function=CustomUpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2**32)),
+            random_state=int(rng.integers(low=0, high=2 ** 32)),
+            acquisition_function=CustomUpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2 ** 32)),
             coefficients=coefficients,
             intercept=intercept
+        )
+    else:
+        optimizer = BayesianOptimization(
+            f=None,
+            pbounds=genotype.get_p_bounds(),
+            allow_duplicate_points=True,
+            random_state=int(rng.integers(low=0, high=2 ** 32)),
+            acquisition_function=acquisition.UpperConfidenceBound(kappa=3,
+                                                                  random_state=rng.integers(low=0, high=2 ** 32))
         )
 
     optimizer.set_gp_params(alpha=[], kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
@@ -238,6 +223,28 @@ def learn_genotype(genotype, evaluator, rng):
 
     return best_objective_value, learn_individuals
 
+def get_prior_information(genotype, rng, sorted_inherited_experience):
+    bonus_optimizer = BayesianOptimization(
+        f=None,
+        pbounds=genotype.get_p_bounds(),
+        allow_duplicate_points=True,
+        random_state=int(rng.integers(low=0, high=2 ** 32)),
+        acquisition_function=acquisition.UpperConfidenceBound(kappa=3, random_state=rng.integers(low=0, high=2 ** 32))
+    )
+    bonus_optimizer.set_gp_params(alpha=0.1, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE,
+                                                           length_scale_bounds="fixed"))
+    for inherited_experience_sample, objective_value, inheritance_number in sorted_inherited_experience:
+        bonus_optimizer.register(params=inherited_experience_sample, target=objective_value)
+    bonus_optimizer.suggest()
+    poly = PolynomialFeatures(2)
+    model = LinearRegression()
+    x_poly = poly.fit_transform(bonus_optimizer._gp.X_train_)
+    model.fit(x_poly, bonus_optimizer._gp.y_train_)
+    coefficients = model.coef_
+    intercept = model.intercept_
+
+    return coefficients, intercept
+
 
 def read_args():
     # Read args
@@ -253,10 +260,15 @@ def read_args():
     config.NUM_REDO_INHERITED_SAMPLES = int(args.inheritsamples)
     config.INHERIT_SAMPLES = True
     config.EVOLUTIONARY_SEARCH = False
+    config.BONUS = False
     if config.NUM_REDO_INHERITED_SAMPLES == -1:
         config.INHERIT_SAMPLES = False
         config.NUM_REDO_INHERITED_SAMPLES = 0
-        config.EVOLUTIONARY_SEARCH = False
+        config.EVOLUTIONARY_SEARCH = True
+    if config.NUM_REDO_INHERITED_SAMPLES == -2:
+        config.INHERIT_SAMPLES = False
+        config.NUM_REDO_INHERITED_SAMPLES = 0
+        config.BONUS = True
     config.LEARN_NUM_GENERATIONS = int(args.learn) - config.NUM_REDO_INHERITED_SAMPLES
     config.CONTROLLERS = int(args.controllers)
     config.ENVIRONMENT = args.environment
