@@ -1,3 +1,5 @@
+import concurrent.futures
+
 import matplotlib.pyplot as plt
 import pandas
 import os
@@ -91,7 +93,7 @@ def get_df(learn, controllers, environment, survivor_select, folder, popsize, in
         i += 1
     return pandas.concat(dfs)
 
-def plot_database(ax_thingy, x_axis, learn, environment, controllers, survivor_select, folder, popsize, inherit_samples):
+def plot_database(learn, environment, controllers, survivor_select, folder, popsize, inherit_samples):
     df = get_df(learn, controllers, environment, survivor_select, folder, popsize, inherit_samples)
 
     result = {
@@ -100,6 +102,8 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, survivor_s
         'tree_edit_distance': [],
         'fitness': [],
         'parent_fitness': [],
+        'inherit_samples': [],
+        'survivor_selection': [],
     }
     experiments = df['experiment_id'].nunique()
     for experiment_id in range(1, experiments + 1):
@@ -116,15 +120,20 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, survivor_s
                 result['tree_edit_distance'].append(ted)
                 result['fitness'].append(row.fitness)
                 result['parent_fitness'].append(parent['fitness'])
+                result['inherit_samples'].append(inherit_samples)
+                result['survivor_selection'].append(survivor_select)
 
-    return result
+    return pd.DataFrame(result)
 
 def main() -> None:
-    fig, ax = plt.subplots(ncols=2)
     folder, popsize = ("./results/2511", 20)
-    dfs = []
-    for i, survivor_select in enumerate(['newest', 'best']):
-        for inherit_samples in ['-1', '0', '5']:
-            dfs.append(plot_database(ax[i], 'generation_index', '50', 'noisy', 'adaptable', survivor_select, folder, popsize, inherit_samples))
+    with concurrent.futures.ProcessPoolExecutor(
+            max_workers=3
+    ) as executor:
+        futures = []
+        for i, survivor_select in enumerate(['newest', 'best']):
+            for inherit_samples in ['-1', '0', '5']:
+                futures.append(executor.submit(plot_database, '50', 'noisy', 'adaptable', survivor_select, folder, popsize, inherit_samples))
+    dfs = [future.result() for future in futures]
 
     pd.concat(dfs).to_csv("results/2511/ted-fitness", index=False)

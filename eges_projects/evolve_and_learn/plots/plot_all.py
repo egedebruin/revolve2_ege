@@ -86,7 +86,7 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, survivor_s
         '-1': 'red',
         '0': 'blue',
         '5': 'green',
-        '20': 'black',
+        '-2': 'black',
         '3': 'yellow',
         '4': 'purple',
         '50': 'grey',
@@ -96,11 +96,8 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, survivor_s
         '-1': 'No inheritance',
         '0': 'Inherit samples',
         '5': 'Redo samples',
+        '-2': 'Inherit prior'
     }
-
-    if 'extra' in folder:
-        to_color['-1'] = 'black'
-        to_label['-1'] = 'Inherit prior'
 
     ax_thingy.plot(
         agg_per_generation[x_axis],
@@ -124,16 +121,10 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, survivor_s
 
 def main() -> None:
     fig, ax = plt.subplots(ncols=2)
-    folder, popsize = ("./results/2511", 20)
+    folder, popsize = ("./results/1712", 20)
     for i, survivor_select in enumerate(['newest', 'best']):
-        for inherit_samples in ['-1', '0', '5']:
-            plot_database(ax[i], 'generation_index', '50', 'noisy', 'adaptable', survivor_select, folder, popsize,
-                          inherit_samples)
-
-    folder, popsize = ("./results/2511/extra", 20)
-    for i, survivor_select in enumerate(['newest', 'best']):
-        for inherit_samples in ['-1', '0', '5']:
-            plot_database(ax[i], 'generation_index', '50', 'noisy', 'adaptable', survivor_select, folder, popsize,
+        for inherit_samples in ['-2', '-1', '0', '5']:
+            plot_database(ax[i], 'generation_index', '30', 'noisy', 'adaptable', survivor_select, folder, popsize,
                           inherit_samples)
 
     ax[0].legend(loc='upper left', fontsize=10)
