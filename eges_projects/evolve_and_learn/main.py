@@ -162,7 +162,7 @@ def learn_genotype(genotype, evaluator, rng):
     alphas = np.array([])
 
     if len(sorted_inherited_experience) > 0 and config.BONUS:
-        coefficients, intercept = get_prior_information(genotype, rng, sorted_inherited_experience)
+        coefficients, intercept, mean, std = get_prior_information(genotype, rng, sorted_inherited_experience)
         optimizer = CustomBayesianOptimization(
             f=None,
             pbounds=genotype.get_p_bounds(),
@@ -171,8 +171,16 @@ def learn_genotype(genotype, evaluator, rng):
             acquisition_function=acquisition.UpperConfidenceBound(kappa=3,
                                                                   random_state=rng.integers(low=0, high=2 ** 32)),
             coefficients=coefficients,
-            intercept=intercept
+            intercept=intercept,
+            old_mean=mean,
+            old_std=std
         )
+        empty_sample = {}
+        for key in sorted_inherited_experience[0][0]:
+            empty_sample[key] = 0
+        alphas = np.append(alphas, config.ALPHA)
+        optimizer.register(params=empty_sample, target=0)
+        optimizer.set_gp_params(alpha=alphas)
     else:
         optimizer = BayesianOptimization(
             f=None,
@@ -182,8 +190,9 @@ def learn_genotype(genotype, evaluator, rng):
             acquisition_function=acquisition.UpperConfidenceBound(kappa=3,
                                                                   random_state=rng.integers(low=0, high=2 ** 32))
         )
+        optimizer.set_gp_params(alpha=[])
 
-    optimizer.set_gp_params(alpha=[], kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
+    optimizer.set_gp_params(kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
     if config.INHERIT_SAMPLES and config.NUM_REDO_INHERITED_SAMPLES == 0:
         for inherited_experience_sample, objective_value, inheritance_number in sorted_inherited_experience:
             alphas = np.append(alphas, config.INHERITED_ALPHA)
@@ -234,8 +243,10 @@ def get_prior_information(genotype, rng, sorted_inherited_experience):
     )
     bonus_optimizer.set_gp_params(alpha=0.1, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE,
                                                            length_scale_bounds="fixed"))
+    objective_values = []
     for inherited_experience_sample, objective_value, inheritance_number in sorted_inherited_experience:
         bonus_optimizer.register(params=inherited_experience_sample, target=objective_value)
+        objective_values.append(objective_value)
     bonus_optimizer.suggest()
     poly = PolynomialFeatures(2)
     model = LinearRegression()
@@ -244,7 +255,7 @@ def get_prior_information(genotype, rng, sorted_inherited_experience):
     coefficients = model.coef_
     intercept = model.intercept_
 
-    return coefficients, intercept
+    return coefficients, intercept, float(np.mean(objective_values)), float(np.std(objective_values))
 
 
 def read_args():

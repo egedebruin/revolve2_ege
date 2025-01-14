@@ -181,8 +181,8 @@ def thin_crater(
         for j in range(num_edges[1]):
             if j > num_edges[1] * 0.9:
                 heightmap[i, j] = 0
-            if i == (num_edges[0]/2 - (wanted_size/2)/size[0] * num_edges[0]) or i == (num_edges[0]/2 +(wanted_size/2)/size[0] * num_edges[0]):
-                heightmap[i, j] = 2
+            # if i == (num_edges[0]/2 - (wanted_size/2)/size[0] * num_edges[0]) or i == (num_edges[0]/2 +(wanted_size/2)/size[0] * num_edges[0]):
+            #     heightmap[i, j] = 2
 
     return Terrain(
         static_geometry=[

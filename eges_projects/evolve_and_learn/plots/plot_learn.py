@@ -9,80 +9,74 @@ from database_components.generation import Generation
 from database_components.genotype import Genotype
 from database_components.individual import Individual
 from database_components.population import Population
-from database_components.learn_generation import LearnGeneration
-from database_components.learn_population import LearnPopulation
 from database_components.learn_individual import LearnIndividual
 
 
-def get_df(learn, evosearch, controllers, environment, survivor_select):
-    database_name = f"learn-{learn}_evosearch-{evosearch}_controllers-{controllers}_select-{survivor_select}_environment-{environment}"
+def get_df(learn, controllers, environment, survivor_select, inherit_samples):
+    database_name = f"learn-{learn}_controllers-{controllers}_survivorselect-{survivor_select}_parentselect-tournament_inheritsamples-{inherit_samples}_environment-{environment}"
     print(database_name)
-    files = [file for file in os.listdir("results/1208") if file.startswith(database_name)]
+    files = [file for file in os.listdir("results/0301") if file.startswith(database_name)]
     if len(files) == 0:
         return None
     dfs = []
     i = 1
     for file_name in files:
-        dbengine = open_database_sqlite("results/1208/" + file_name, open_method=OpenMethod.OPEN_IF_EXISTS)
+        if i > 5:
+            break
+        dbengine = open_database_sqlite("results/0301/" + file_name, open_method=OpenMethod.OPEN_IF_EXISTS)
 
         df_mini = pandas.read_sql(
             select(
                 Experiment.id.label("experiment_id"),
                 Generation.generation_index,
                 Genotype.id.label("genotype_id"),
-                LearnGeneration.generation_index.label('learn_generation_index'),
-                LearnIndividual.fitness
+                LearnIndividual.generation_index.label('learn_generation_index'),
+                LearnIndividual.objective_value
             )
             .join_from(Experiment, Generation, Experiment.id == Generation.experiment_id)
             .join_from(Generation, Population, Generation.population_id == Population.id)
             .join_from(Population, Individual, Population.id == Individual.population_id)
             .join_from(Individual, Genotype, Individual.genotype_id == Genotype.id)
-            .join_from(Genotype, LearnGeneration, Genotype.id == LearnGeneration.genotype_id)
-            .join_from(LearnGeneration, LearnPopulation, LearnGeneration.learn_population_id == LearnPopulation.id)
-            .join_from(LearnPopulation, LearnIndividual, LearnPopulation.id == LearnIndividual.population_id),
+            .join_from(Genotype, LearnIndividual, Genotype.id == LearnIndividual.morphology_genotype_id),
             dbengine,
         )
         df_mini['experiment_id'] = i
-        df_mini['function_evaluations'] = df_mini['generation_index'] * int(learn) * 50 + int(learn) * 50
         dfs.append(df_mini)
         i += 1
     return pandas.concat(dfs)
 
 
 def main() -> None:
-    fig, ax = plt.subplots(nrows=3, ncols=3, sharex='col', sharey='row')
-    for i, environment in enumerate(['flat', 'noisy', 'steps']):
-        for j, (learn, evosearch) in enumerate([('30', '1')]):
-            df = get_df(learn, evosearch, 'adaptable', environment, 'tournament')
-            grouped = df.groupby(['experiment_id', 'genotype_id'])
+    fig, ax = plt.subplots(nrows=4, sharex='col', sharey='row')
+    for i, inherit_samples in enumerate(['-1', '5', '0', '-2']):
+        df = get_df('30', 'adaptable', 'noisy', 'newest', inherit_samples)
+        grouped = df.groupby(['experiment_id', 'genotype_id'])
 
-            snaggywaggy = {
-                'difference': [],
-                'difference2': [],
-                'function_evaluations': [],
-            }
-            for name, group in grouped:
-                first = group.loc[group['learn_generation_index'] < 1]
-                first_three = group.loc[group['learn_generation_index'] < 5]
-                last = group.loc[group['learn_generation_index'] >= int(learn) - 1]
-                last_three = group.loc[group['learn_generation_index'] >= int(learn) - 5]
-                snaggywaggy['difference'].append(last_three.max()['fitness'] - first_three.max()['fitness'])
-                snaggywaggy['difference2'].append(last.mean()['fitness'] - first.mean()['fitness'])
-                snaggywaggy['function_evaluations'].append(first_three.mean()['function_evaluations'])
+        snaggywaggy = {
+            'difference': [],
+            'generation_index': [],
+        }
+        for name, group in grouped:
+            first_five = group.loc[group['learn_generation_index'] < 5]
+            last_five = group.loc[group['learn_generation_index'] >= 30 - 5]
+            snaggywaggy['difference'].append(last_five.max()['objective_value'] - first_five.max()['objective_value'])
+            snaggywaggy['generation_index'].append(first_five.mean()['generation_index'])
 
-            thisisit = pandas.DataFrame(snaggywaggy)
-            agg = (
-                thisisit.groupby(["function_evaluations"])
-                .agg({"difference": ["mean"], "difference2": ["mean"]})
-                .reset_index()
-            )
-            agg.columns = [
-                "function_evaluations",
-                "mean_difference",
-                "mean_difference2",
-            ]
-            ax[i][j].plot(agg['function_evaluations'], agg['mean_difference'])
-            # ax[i][j].plot(agg['function_evaluations'], agg['mean_difference2'])
+        thisisit = pandas.DataFrame(snaggywaggy)
+        agg = (
+            thisisit.groupby(["generation_index"])
+            .agg({"difference": ["mean"]})
+            .reset_index()
+        )
+        agg.columns = [
+            "generation_index",
+            "mean_difference",
+        ]
+        ax[i].plot(agg['generation_index'], agg['mean_difference'])
+    ax[0].set_title('No inheritance')
+    ax[1].set_title('Redo samples')
+    ax[2].set_title('Inherit samples')
+    ax[3].set_title('Inherit prior')
     plt.show()
 
 

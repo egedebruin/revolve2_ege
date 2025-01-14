@@ -27,6 +27,8 @@ class CustomBayesianOptimization(BayesianOptimization):
             allow_duplicate_points: bool = False,
             coefficients: list = None,
             intercept: float = None,
+            old_mean: float = None,
+            old_std: float = None,
     ):
         super().__init__(f, pbounds, acquisition_function, constraint, random_state, verbose, bounds_transformer, allow_duplicate_points)
         self._gp = CustomGaussianProcessRegressor(
@@ -37,4 +39,6 @@ class CustomBayesianOptimization(BayesianOptimization):
             random_state=self._random_state,
             coefficients=coefficients,
             intercept=intercept,
+            old_mean=old_mean,
+            old_std=old_std,
         )

@@ -7,9 +7,10 @@ from copy import copy
 import multineat
 import numpy as np
 import sqlalchemy.orm as orm
+from dataclasses import field
 
-from revolve2.ci_group.genotypes.cppnwin.modular_robot.v1 import BodyGenotypeOrmV1
-from revolve2.ci_group.genotypes.cppnwin.modular_robot import BrainGenotypeCpgOrm
+from revolve2.standards.genotypes.cppnwin.modular_robot.v1 import BodyGenotypeOrmV1
+from revolve2.standards.genotypes.cppnwin.modular_robot import BrainGenotypeCpgOrm
 from .base import Base
 
 from genotypes.brain_genotype_direct import BrainGenotype
@@ -23,8 +24,8 @@ class Genotype(Base, HasId, BodyGenotypeOrmV1, BrainGenotype):
     __tablename__ = "genotype"
     parent_1_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
     parent_2_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
-    innov_db_brain = None
-    best_population = []
+    innov_db_brain: multineat.InnovationDatabase = field(default_factory=lambda: None)
+    best_population: list = field(default_factory=lambda: [])
 
     @classmethod
     def initialize(

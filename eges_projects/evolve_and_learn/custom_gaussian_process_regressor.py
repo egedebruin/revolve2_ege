@@ -29,10 +29,14 @@ class CustomGaussianProcessRegressor(GaussianProcessRegressor):
             random_state=None,
             coefficients=None,
             intercept=None,
+            old_mean=None,
+            old_std=None
     ):
         super().__init__(kernel=kernel, alpha=alpha, optimizer=optimizer, n_restarts_optimizer=n_restarts_optimizer, normalize_y=normalize_y, copy_X_train=copy_X_train, n_targets=n_targets, random_state=random_state)
         self.coefficients = coefficients
         self.intercept = intercept
+        self.old_mean = old_mean
+        self.old_std = old_std
 
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X, y):
@@ -173,6 +177,7 @@ class CustomGaussianProcessRegressor(GaussianProcessRegressor):
         prior = 0
         if len(self.coefficients) > 0:
             prior = np.dot(X_train_poly, self.coefficients) + self.intercept
+            prior = (prior * self.old_std + self.old_mean - self._y_train_mean) / self._y_train_std
 
         adjusted_y_train = self.y_train_ - prior
 
@@ -267,6 +272,7 @@ class CustomGaussianProcessRegressor(GaussianProcessRegressor):
             prior = 0
             if len(self.coefficients) > 0:
                 prior = np.dot(X_poly, self.coefficients) + self.intercept
+                prior = (prior * self.old_std + self.old_mean - self._y_train_mean) / self._y_train_std
 
             y_mean = prior + K_trans @ self.alpha_
 

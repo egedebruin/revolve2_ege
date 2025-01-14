@@ -13,9 +13,8 @@ from sqlalchemy import select
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 
 
-def get_all_genotypes(learn, survivor_select):
-    folder = "results/2309"
-    database_name = f"learn-{learn}_evosearch-1_controllers-adaptable_survivorselect-{survivor_select}_parentselect-tournament_environment-noisy"
+def get_all_genotypes(learn, controllers, environment, survivor_select, folder, inherit_samples):
+    database_name = f"learn-{learn}_controllers-{controllers}_survivorselect-{survivor_select}_parentselect-tournament_inheritsamples-{inherit_samples}_environment-{environment}"
     print(database_name)
     files = [file for file in os.listdir(folder) if file.startswith(database_name)]
     if len(files) == 0:
@@ -52,30 +51,43 @@ def get_origin_id(genotype_id, df_experiment):
 def main():
     result = {
         'learn': [],
-        'survivor_select': [],
+        'inherit_samples': [],
         'generation': [],
         'experiment_id': [],
         'average_number_of_origin_ids': [],
     }
     for learn in ['30']:
-        for survivor_select in ['best', 'newest']:
-            df = get_all_genotypes(learn, survivor_select)
+        for inherit_samples in ['-1', '5', '0', '-2']:
+            df = get_all_genotypes(learn, 'adaptable', 'noisy', 'newest', './results/0301', inherit_samples)
 
             experiments = df['experiment_id'].nunique()
             for experiment_id in range(1, experiments + 1):
+                print(experiment_id)
                 df_experiment = df.loc[df['experiment_id'] == experiment_id]
-                for generation_id in range(166):
+                for generation_id in range(100):
                     df_generation = df_experiment.loc[df_experiment['generation_index'] == generation_id]
                     genotype_ids = list(df_generation['id'])
                     origin_ids = []
                     for genotype_id in genotype_ids:
                         origin_ids.append(get_origin_id(genotype_id, df_experiment))
                     result['learn'].append(learn)
-                    result['survivor_select'].append(survivor_select)
                     result['generation'].append(generation_id)
                     result['experiment_id'].append(experiment_id)
                     result['average_number_of_origin_ids'].append(len(set(origin_ids)))
-    pd.DataFrame(result).to_csv("results/first-parent-2309-30.csv", index=False)
+                    result['inherit_samples'].append(inherit_samples)
+    pd.DataFrame(result).to_csv("results/first-parent-0301.csv", index=False)
+
+def plot():
+    df = pd.read_csv('./results/first-parent-0301.csv')
+    fig, ax = plt.subplots(nrows=4, sharex='col', sharey='row')
+    for i, inherit_samples in enumerate([-1, 5, 0, -2]):
+        df_mini = df.loc[df['inherit_samples'] == inherit_samples]
+        avg_origin = df_mini.groupby('generation')['average_number_of_origin_ids'].mean()
+
+        print(avg_origin)
+
+        avg_origin.plot(ax=ax[i])
+    plt.show()
 
 
 if __name__ == '__main__':

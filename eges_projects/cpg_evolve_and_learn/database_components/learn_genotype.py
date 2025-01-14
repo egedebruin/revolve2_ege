@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from database_components.base import Base
 from genotypes.brain_genotype_direct import BrainGenotype
-from revolve2.ci_group.genotypes.cppnwin.modular_robot import BrainGenotypeCpgOrm
+from revolve2.standards.genotypes.cppnwin.modular_robot import BrainGenotypeCpgOrm
 
 from revolve2.experimentation.database import HasId
 from revolve2.modular_robot import ModularRobot
@@ -12,7 +12,7 @@ from revolve2.modular_robot import ModularRobot
 import sqlalchemy.orm as orm
 
 
-class LearnGenotype(Base, HasId, BrainGenotype):
+class LearnGenotype(Base, HasId, BrainGenotypeCpgOrm):
     """A genotype that is an array of parameters."""
 
     __tablename__ = "learn_genotype"

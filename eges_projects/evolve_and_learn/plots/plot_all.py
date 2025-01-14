@@ -120,14 +120,19 @@ def plot_database(ax_thingy, x_axis, learn, environment, controllers, survivor_s
 
 
 def main() -> None:
-    fig, ax = plt.subplots(ncols=2)
-    folder, popsize = ("./results/1712", 20)
-    for i, survivor_select in enumerate(['newest', 'best']):
-        for inherit_samples in ['-2', '-1', '0', '5']:
-            plot_database(ax[i], 'generation_index', '30', 'noisy', 'adaptable', survivor_select, folder, popsize,
+    fig, ax = plt.subplots()
+    folder, popsize = ("./results/0301", 20)
+    for i, survivor_select in enumerate(['newest']):
+        for inherit_samples in ['-1', '5', '0', '-2']:
+            plot_database(ax, 'generation_index', '30', 'noisy', 'adaptable', survivor_select, folder, popsize,
+                          inherit_samples)
+    folder, popsize = ("./results/0301/extra", 20)
+    for i, survivor_select in enumerate(['newest']):
+        for inherit_samples in ['-1', '5', '0', '-2']:
+            plot_database(ax, 'generation_index', '30', 'noisy', 'adaptable', survivor_select, folder, popsize,
                           inherit_samples)
 
-    ax[0].legend(loc='upper left', fontsize=10)
+    ax.legend(loc='lower right', fontsize=10)
     plt.subplots_adjust(wspace=0, hspace=0)
     plt.show()
 

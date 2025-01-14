@@ -120,26 +120,18 @@ def run_experiment(dbengine: Engine) -> None:
 
 
 def learn_population(genotypes, evaluator, dbengine, rng):
-    with concurrent.futures.ProcessPoolExecutor(
-            max_workers=config.NUM_PARALLEL_PROCESSES
-    ) as executor:
-        futures = [
-            executor.submit(learn_genotype, genotype, evaluator, rng)
-            for genotype in genotypes
-        ]
     result_objective_values = []
-    genotypes = []
-    for future in futures:
-
-        objective_value, best_individual, learn_individuals = future.result()
+    new_genotypes = []
+    for genotype in genotypes:
+        objective_value, best_individual, learn_individuals = learn_genotype_cppn(genotype, evaluator, rng)
         result_objective_values.append(objective_value)
-        genotypes.append(best_individual.morphology_genotype)
+        new_genotypes.append(best_individual.morphology_genotype)
 
         for learn_individual in learn_individuals:
             with Session(dbengine, expire_on_commit=False) as session:
                 session.add(learn_individual)
                 session.commit()
-    return result_objective_values, genotypes
+    return result_objective_values, new_genotypes
 
 
 def learn_genotype(genotype: Genotype, evaluator, rng: np.random.Generator):
@@ -170,7 +162,7 @@ def learn_genotype(genotype: Genotype, evaluator, rng: np.random.Generator):
         learn_individuals.append(learn_individual)
         population.append((next_brain, objective_value))
 
-    logging.info(f"Finish straining initial learn population.")
+    logging.info(f"Finish training initial learn population.")
 
     for i in range(config.LEARN_NUM_GENERATIONS):
         logging.info(f"Learn generation {i + 1} / {config.LEARN_NUM_GENERATIONS}.")
@@ -196,10 +188,21 @@ def learn_genotype(genotype: Genotype, evaluator, rng: np.random.Generator):
     return best_objective_value, best_individual, learn_individuals
 
 def learn_genotype_cppn(genotype: Genotype, evaluator, rng: np.random.Generator):
+    print("LEARN")
     developed_body = genotype.develop_body()
     learn_individuals = []
     population = []
     next_brains = []
+
+    if len(genotype.best_population) == 0:
+        genotype.innov_db_brain = multineat.InnovationDatabase()
+        for _ in range(config.LEARN_POPULATION_SIZE):
+            brain = LearnGenotype.random_brain(genotype.innov_db_brain, rng)
+            new_learn_genotype = LearnGenotype(brain=brain.brain)
+            learn_individual = LearnIndividual(morphology_genotype=genotype, genotype=new_learn_genotype,
+                                               objective_value=0, generation_index=0)
+            genotype.best_population.append(learn_individual)
+
     for individual in genotype.best_population:
         next_brains.append(individual.genotype.brain)
     best_individual = None
@@ -221,7 +224,9 @@ def learn_genotype_cppn(genotype: Genotype, evaluator, rng: np.random.Generator)
 
         next_brains = []
         for j in range(config.LEARN_POPULATION_SIZE):
-            continue
+            parent1, parent2 = rng.choice(population[:int(config.LEARN_POPULATION_SIZE / 2)], 2)
+            child = LearnGenotype.crossover_brain(parent1.genotype, parent2.genotype, rng).mutate_brain(genotype.innov_db_brain, rng)
+            next_brains.append(child.brain)
 
 
     best_individual.morphology_genotype.best_population = population
