@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 import numpy as np
 
-from genotypes.brain_genotype_simple import BrainGenotype
+from genotypes.brain_genotype import BrainGenotype
 
 
 class BodyGenotype:

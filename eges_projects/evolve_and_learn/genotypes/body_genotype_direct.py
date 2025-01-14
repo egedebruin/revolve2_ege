@@ -10,7 +10,7 @@ from sqlalchemy import event
 from sqlalchemy.engine import Connection
 
 from genotypes.body_genotype import BodyGenotype
-from genotypes.brain_genotype_simple import BrainGenotype
+from genotypes.brain_genotype import BrainGenotype
 import config
 from revolve2.modular_robot.body import RightAngles
 from revolve2.modular_robot.body.v1 import BodyV1, ActiveHingeV1, BrickV1

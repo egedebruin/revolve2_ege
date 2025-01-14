@@ -22,9 +22,9 @@ class CpgBrain(BrainCpgNetworkNeighbor):
         external_weights = []
         for (active_hinge1, active_hinge2) in connections:
             if active_hinge1 in active_hinge2.neighbours(within_range=1) or active_hinge2 in active_hinge1.neighbours(within_range=1):
-                external_weights.append(self.brain[active_hinge1.map_uuid][1] * 4 - 2 )
+                external_weights.append(self.brain[active_hinge1.map_uuid][1] * 8 - 4 )
             else:
-                external_weights.append(self.brain[active_hinge1.map_uuid][2] * 4 - 2 )
+                external_weights.append(self.brain[active_hinge1.map_uuid][2] * 8 - 4 )
 
         return (internal_weights, external_weights)
 
