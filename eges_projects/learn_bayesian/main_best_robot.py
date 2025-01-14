@@ -124,7 +124,7 @@ def read_args():
 
 def run_experiments():
     file_name = 'learn-30'
-    folder = "../evolve_and_learn/results/0301"
+    folder = "results/0301"
     files = [file for file in os.listdir(folder) if file.startswith(file_name)]
     with concurrent.futures.ProcessPoolExecutor(
             max_workers=config.NUM_PARALLEL_PROCESSES
