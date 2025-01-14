@@ -24,23 +24,14 @@ def get_best_genotype(file_name):
     )
     with Session(dbengine) as ses:
         row = ses.execute(
-            select(LearnGenotype)
+            select(Genotype)
             .join_from(LearnGenotype, LearnIndividual, LearnGenotype.id == LearnIndividual.genotype_id)
-            .join_from(LearnIndividual, LearnPopulation, LearnIndividual.population_id == LearnPopulation.id)
-            .join_from(LearnPopulation, LearnGeneration, LearnPopulation.id == LearnGeneration.learn_population_id)
-            .join_from(LearnGeneration, Genotype, Genotype.id == LearnGeneration.genotype_id)
-            .join_from(Genotype, Individual, Individual.genotype_id == Genotype.id)
-            .join_from(Individual, Population, Population.id == Individual.population_id)
-            .join_from(Population, Generation, Generation.population_id == Population.id)
-            .where(Generation.generation_index == 166)
-        ).all()
+            .join_from(LearnIndividual, Genotype, LearnIndividual.morphology_genotype_id == Genotype.id)
+            .order_by(LearnIndividual.objective_value.desc())
+        ).first()
         assert row is not None
 
-    genotypes = []
-    for genotype in row:
-        genotypes.append(genotype[0])
-
-    return genotypes
+    return row[0]
 
 
 def make_body() -> BodyV2:

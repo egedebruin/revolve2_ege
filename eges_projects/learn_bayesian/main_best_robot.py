@@ -6,8 +6,7 @@ import os
 from argparse import ArgumentParser
 
 import numpy as np
-from bayes_opt import BayesianOptimization
-from bayes_opt import UtilityFunction
+from bayes_opt import acquisition, BayesianOptimization
 from sklearn.gaussian_process.kernels import Matern
 
 import config
@@ -25,13 +24,13 @@ from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.rng import seed_from_time, make_rng
 
 
-def run_experiment():
+def run_experiment(genotype, experiment, file):
     logging.info("----------------")
     logging.info("Start experiment")
 
     # Open the database, only if it does not already exists.
     dbengine = open_database_sqlite(
-        "test.sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
+        file.replace(".sqlite", "") + "_" + str(experiment) + ".sqlite", open_method=OpenMethod.NOT_EXISTS_AND_CREATE
     )
     # Create the structure of the database.
     Base.metadata.create_all(dbengine)
@@ -56,54 +55,28 @@ def run_experiment():
 
     pbounds = {}
 
-    genotype = body_getter.get_best_genotype("../evolve_and_learn/results/2309/learn-1_evosearch-1_controllers-adaptable_survivorselect-best_parentselect-tournament_environment-noisy_1.sqlite")[0]
-
     for uuid in genotype.brain.keys():
         pbounds['amplitude_' + str(uuid)] = [0, 1]
         pbounds['phase_' + str(uuid)] = [0, 1]
+        pbounds['offset_' + str(uuid)] = [0, 1]
 
     optimizer = BayesianOptimization(
         f=None,
         pbounds=pbounds,
-        allow_duplicate_points=False,
-        random_state=int(rng.integers(low=0, high=2 ** 32))
+        allow_duplicate_points=True,
+        random_state=int(rng.integers(low=0, high=2 ** 32)),
+        acquisition_function=acquisition.UpperConfidenceBound(kappa=3,
+                                                              random_state=rng.integers(low=0, high=2 ** 32))
     )
-    alpha = np.array([])
-    optimizer.set_gp_params(alpha=alpha, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
-    utility = UtilityFunction(kind="ucb", kappa=config.KAPPA)
+    optimizer.set_gp_params(alpha=1e-10, kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
 
     # Run cma for the defined number of generations.
     logging.info("Start optimization process.")
 
-    best_value = -100
-    best_point = {}
-
     for i in range(config.NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES):
         logging.info(f"Generation {i + 1} / {config.NUM_GENERATIONS + config.NUM_RANDOM_SAMPLES}.")
 
-        if i < config.NUM_RANDOM_SAMPLES:
-            next_point = {}
-            for key in genotype.brain.keys():
-                next_point['amplitude_' + str(key)] = genotype.brain[key][0]
-                next_point['phase_' + str(key)] = genotype.brain[key][1]
-            next_point = dict(sorted(next_point.items()))
-        else:
-            bo_point = optimizer.suggest(utility)
-            bo_utility = utility.utility([list(bo_point.values())], optimizer._gp, 0)
-            next_point = {}
-            next_best = 0
-            # for _ in range(10000):
-            #     possible_point = {}
-            #     for key in best_point.keys():
-            #         possible_point[key] = best_point[key] + np.random.normal(0, config.NEIGHBOUR_SCALE)
-            #     possible_point = dict(sorted(possible_point.items()))
-            #
-            #     utility_value = utility.utility([list(possible_point.values())], optimizer._gp, 0)
-            #     if utility_value > next_best:
-            #         next_best = utility_value
-            #         next_point = possible_point
-            if bo_utility >= next_best:
-                next_point = bo_point
+        next_point = optimizer.suggest()
 
         new_learn_genotype = Genotype(brain={}, body=genotype.body)
         for brain_uuid in genotype.brain.keys():
@@ -111,19 +84,14 @@ def run_experiment():
                 [
                     next_point['amplitude_' + str(brain_uuid)],
                     next_point['phase_' + str(brain_uuid)],
+                    next_point['offset_' + str(brain_uuid)],
                 ]
             )
         robot = new_learn_genotype.develop()
 
         fitness = evaluator.evaluate(robot)
 
-        if fitness > best_value:
-            best_value = fitness
-            best_point = next_point
-
         optimizer.register(params=next_point, target=fitness)
-        alpha = np.append(alpha, 0.5)
-        optimizer.set_gp_params(alpha=alpha)
         print(f"Fitness: {fitness}")
 
         population = Population(
@@ -155,17 +123,17 @@ def read_args():
 
 
 def run_experiments():
-    file_name = 'learn-1'
-    folder = "results/2309"
+    file_name = 'learn-30'
+    folder = "../evolve_and_learn/results/0301"
     files = [file for file in os.listdir(folder) if file.startswith(file_name)]
     with concurrent.futures.ProcessPoolExecutor(
             max_workers=config.NUM_PARALLEL_PROCESSES
     ) as executor:
         futures = []
         for file in files:
-            genotypes = body_getter.get_best_genotype(folder + "/" + file)
-            for i, genotype in enumerate(genotypes):
-                futures.append(executor.submit(run_experiment, i, genotype, file))
+            genotype = body_getter.get_best_genotype(folder + "/" + file)
+            for i in range(1, config.RUNS + 1):
+                futures.append(executor.submit(run_experiment, genotype, i, file))
     for future in futures:
         future.result()
 
@@ -173,7 +141,7 @@ def run_experiments():
 def main() -> None:
     """Run the program."""
     # Set up logging.
-    run_experiment()
+    run_experiments()
 
 
 if __name__ == "__main__":
