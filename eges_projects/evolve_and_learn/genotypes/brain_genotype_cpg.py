@@ -51,7 +51,7 @@ class BrainGenotype(AbstractBrainGenotype):
             unique_keys = set()
 
             for full_key, value in values.items():
-                real_key = full_key.split("_")[1]
+                real_key = full_key.split("_")[-1]
                 unique_keys.add(real_key)
                 if real_key not in current_genotype_keys:
                     keys_to_remove.append(full_key)
