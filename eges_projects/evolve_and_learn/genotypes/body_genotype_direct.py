@@ -28,6 +28,15 @@ class BodyDeveloper:
         'back': 'back',
         'attachment': 'attachment'
     }
+    not_straight_direction = {
+        'left': 'up',
+        'up': 'left',
+        'front': 'front',
+        'right': 'down',
+        'down': 'right',
+        'back': 'back',
+        'attachment': 'attachment'
+    }
 
     def __init__(self, initial_module):
         self.grid = [Vector3([0, 0, 0])]
@@ -36,28 +45,33 @@ class BodyDeveloper:
         initial_module.body_module = self.body.core_v1
 
         self.queue = []
-        self.queue.append((initial_module, initial_module.body_module, False))
+        self.queue.append((initial_module, initial_module.body_module, False, True))
 
 
     def develop(self):
         while len(self.queue) > 0:
-            current_module, current_body_module, module_mirror = self.queue.pop(0)
+            current_module, current_body_module, module_mirror, straight = self.queue.pop(0)
             for directions, new_module in current_module.children.items():
                 direction_mirror = module_mirror
                 for direction in directions:
                     new_body_module = new_module.get_body_module(direction_mirror)
+
+                    correct_direction = direction
+                    if current_module.central and not straight:
+                        correct_direction = self.not_straight_direction[direction]
                     if module_mirror:
-                        direction = self.reverse_direction[direction]
-                    setattr(current_body_module, direction, new_body_module)
+                        correct_direction = self.reverse_direction[correct_direction]
+
+                    setattr(current_body_module, correct_direction, new_body_module)
 
                     grid_position = self.body.grid_position(new_body_module)
                     if grid_position in self.grid or len(self.grid) > config.MAX_NUMBER_OF_MODULES:
-                        setattr(current_body_module, direction, None)
+                        setattr(current_body_module, correct_direction, None)
                         continue
 
                     self.grid.append(grid_position)
+                    self.queue.append((new_module, new_body_module, direction_mirror, straight if new_module.rotation == 0.0 else not straight))
 
-                    self.queue.append((new_module, new_body_module, direction_mirror))
                     direction_mirror = not direction_mirror
 
             if isinstance(current_body_module, ActiveHingeV1):
@@ -79,20 +93,12 @@ class ModuleGenotype:
     possible_children: list
     type: str
     body_module = None
+    central = 0
     reverse_rotation = {
         RightAngles.DEG_0.value: 0.0,
         RightAngles.DEG_90.value: RightAngles.DEG_270.value,
         RightAngles.DEG_180.value: RightAngles.DEG_180.value,
         RightAngles.DEG_270.value: RightAngles.DEG_90.value
-    }
-    reverse_direction = {
-        'left': 'right',
-        'up': 'up',
-        'front': 'front',
-        'right': 'left',
-        'down': 'down',
-        'back': 'back',
-        'attachment': 'attachment'
     }
 
     def __init__(self, rotation):
@@ -105,57 +111,38 @@ class ModuleGenotype:
             self.temp_rotation = self.reverse_rotation[self.rotation]
 
     def add_random_module_to_connection(self, index: int, rng: np.random.Generator, brain: BrainGenotype):
-        for directions in self.possible_children:
+        for directions in self.get_possible_children():
+            if index == 1:
+                module_to_add = self.choose_random_module(rng, brain)
+                if self.central and len(directions) == 1:
+                    module_to_add.central = True
+
+                existing_module = None
+                if tuple(directions) in list(self.children.keys()):
+                    existing_module = self.children[tuple(directions)]
+                self.children[tuple(directions)] = module_to_add
+
+                if existing_module is not None:
+                    if isinstance(module_to_add, HingeGenotype):
+                        module_to_add.children[tuple(['attachment'])] = existing_module
+                    if isinstance(module_to_add, BrickGenotype):
+                        module_to_add.children[tuple(['front'])] = existing_module
+
+                return 0
+            index -= 1
             if tuple(directions) in self.children.keys():
                 index = self.children[tuple(directions)].add_random_module_to_connection(index, rng, brain)
-            else:
-                if index == 1:
-                    self.children[tuple(directions)] = self.choose_random_module(rng, brain)
-                index -= 1
-            if index == 0:
-                return 0
-        return index
-
-    def add_random_module_to_block(self, index: int, rng: np.random.Generator, brain: BrainGenotype):
-        if index == 1:
-            connection_choice = rng.choice(np.array(self.possible_children, dtype=object))
-            module_to_add = self.choose_random_module(rng, brain)
-            existing_module = None
-            if tuple(connection_choice) in list(self.children.keys()):
-                existing_module = self.children[tuple(connection_choice)]
-            self.children[tuple(connection_choice)] = module_to_add
-
-            if existing_module is not None:
-                if isinstance(module_to_add, HingeGenotype):
-                    module_to_add.children[tuple(['attachment'])] = existing_module
-                if isinstance(module_to_add, BrickGenotype):
-                    module_to_add.children[tuple(['front'])] = existing_module
-
-            return 0
-        for module in self.children.values():
-            index = module.add_random_module_to_block(index - 1, rng, brain)
             if index == 0:
                 return 0
         return index
 
     def get_amount_possible_connections(self):
         possible_connections = 0
-        for directions in self.possible_children:
+        for directions in self.get_possible_children():
+            possible_connections += 1
             if tuple(directions) in self.children.keys():
                 possible_connections += self.children[tuple(directions)].get_amount_possible_connections()
-            else:
-                possible_connections += 1
         return possible_connections
-
-    def get_amount_leaf_nodes(self):
-        leaves = 0
-
-        for module in self.children.values():
-            leaves += module.get_amount_leaf_nodes()
-
-        if leaves == 0:
-            leaves = 1
-        return leaves
 
     def get_amount_nodes(self):
         nodes = 1
@@ -181,23 +168,6 @@ class ModuleGenotype:
 
         return nodes
 
-    def is_leaf_node(self):
-        return not bool(self.children)
-
-    def remove_leaf_node(self, index):
-        for direction, module in self.children.items():
-            if module.is_leaf_node():
-                if index == 1:
-                    self.children.pop(direction)
-                    return 0
-                index -= 1
-            else:
-                index = module.remove_leaf_node(index)
-                if index == 0:
-                    return 0
-
-        return index
-
     def remove_node(self, index):
         for direction, module in self.children.items():
             if index == 1:
@@ -213,7 +183,7 @@ class ModuleGenotype:
                     elif self.type == 'core' and list(child_direction) in [['front'], ['back']]:
                         temp_key = ['front', 'back']
 
-                    if temp_key in self.possible_children and tuple(temp_key) not in self.children.keys():
+                    if temp_key in self.get_possible_children() and tuple(temp_key) not in self.children.keys():
                         self.children[tuple(temp_key)] = child.children[child_direction]
 
                 return 0
@@ -240,7 +210,7 @@ class ModuleGenotype:
             module.reverse_phase_function(value)
 
     def serialize(self):
-        serialized = {'type': self.type, 'rotation': self.rotation, 'children': {}}
+        serialized = {'type': self.type, 'rotation': self.rotation, 'central': int(self.central), 'children': {}}
 
         for directions, module in self.children.items():
             direction_string = ",".join(directions)
@@ -250,6 +220,9 @@ class ModuleGenotype:
 
     def deserialize(self, serialized):
         self.type = serialized['type']
+        self.central = False
+        if 'central' in serialized.keys():
+            self.central = serialized['central']
         for direction, child in serialized['children'].items():
             if isinstance(direction, str):
                 direction = tuple(map(str, direction.split(',')))
@@ -263,12 +236,11 @@ class ModuleGenotype:
 
     def choose_random_module(self, rng: np.random.Generator, brain: BrainGenotype):
         module_chooser = rng.random()
-        rotation = rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value, RightAngles.DEG_180.value, RightAngles.DEG_270.value])
 
         if module_chooser < 0.5:
-            module = BrickGenotype(rotation)
+            module = BrickGenotype(0.0)
         else:
-            module = HingeGenotype(rotation)
+            module = HingeGenotype(rotation = rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value]))
 
             new_brain_chooser = rng.random()
             if config.CONTROLLERS == -1 and new_brain_chooser < config.NEW_HINGE_NEW_BRAIN:
@@ -278,6 +250,9 @@ class ModuleGenotype:
 
         return module
 
+    def get_possible_children(self):
+        return self.possible_children
+
 
 class CoreGenotype(ModuleGenotype):
     possible_children = [['left'], ['right'], ['front', 'back']]
@@ -285,6 +260,7 @@ class CoreGenotype(ModuleGenotype):
     rotation = 0.0
     possible_phase_differences = [0, math.pi]
     reverse_phase = 0
+    central = 1
 
     def get_amount_nodes(self):
         nodes = 0
@@ -324,13 +300,19 @@ class CoreGenotype(ModuleGenotype):
 
 
 class BrickGenotype(ModuleGenotype):
-    possible_children = [['left'], ['right'], ['front'], ['up'], ['down']]
     type = 'brick'
+    central = 0
 
     def get_body_module(self, reverse):
         super().get_body_module(reverse)
         self.body_module = BrickV1(self.temp_rotation)
         return self.body_module
+
+    def get_possible_children(self):
+        if self.central:
+            return [['left', 'right'], ['front'], ['up'] , ['down']]
+        else:
+            return [['left'], ['right'], ['front'], ['up'], ['down']]
 
 
 class HingeGenotype(ModuleGenotype):
@@ -420,9 +402,9 @@ class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
 
             if mutation_chooser < 0.45:
                 for _ in range(rng.integers(1, config.MAX_ADD_MODULES + 1)):
-                    amount_nodes = body.get_amount_nodes() + 1
-                    node_to_add = rng.integers(1, amount_nodes + 1)
-                    body.add_random_module_to_block(node_to_add, rng, brain)
+                    amount_possible_connections = body.get_amount_possible_connections()
+                    connection_to_add = rng.integers(1, amount_possible_connections + 1)
+                    body.add_random_module_to_connection(connection_to_add, rng, brain)
                 mutation_accepted = body.get_amount_modules() < config.MAX_NUMBER_OF_MODULES * 1.1
             elif mutation_chooser <= 0.9:
                 for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
