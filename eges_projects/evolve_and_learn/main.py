@@ -268,6 +268,7 @@ def read_args():
     parser.add_argument("--survivorselect", required=True)
     parser.add_argument("--parentselect", required=True)
     parser.add_argument("--inheritsamples", required=True)
+    parser.add_argument("--grow", required=False)
     args = parser.parse_args()
     config.NUM_REDO_INHERITED_SAMPLES = int(args.inheritsamples)
     config.INHERIT_SAMPLES = True
@@ -286,6 +287,11 @@ def read_args():
     config.ENVIRONMENT = args.environment
     config.SURVIVOR_SELECT_STRATEGY = args.survivorselect
     config.PARENT_SELECT_STRATEGY = args.parentselect
+    extra = ""
+    if args.grow:
+        config.INIT_MIN_MODULES = 5
+        config.INIT_MAX_MODULES = 10
+        extra += "_grow-1"
     controllers_string = 'adaptable' if config.CONTROLLERS == -1 else config.CONTROLLERS
     config.DATABASE_FILE = ("learn-" + str(args.learn) + "_controllers-" + str(controllers_string) + "_survivorselect-"
                             + args.survivorselect + "_parentselect-" + args.parentselect + "_inheritsamples-" + args.inheritsamples + "_environment-"

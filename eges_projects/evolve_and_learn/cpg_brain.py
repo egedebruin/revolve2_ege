@@ -17,7 +17,7 @@ class CpgBrain(BrainCpgNetworkNeighbor):
 
     def _make_weights(self, active_hinges: list[ActiveHinge], connections: list[tuple[ActiveHinge, ActiveHinge]],
                       body: Body) -> tuple[list[float], list[float]]:
-        internal_weights = [self.brain[active_hinge.map_uuid][0] * 2 - 1 for active_hinge in active_hinges]
+        internal_weights = [self.brain[active_hinge.map_uuid][0] * 8 - 4 for active_hinge in active_hinges]
 
         external_weights = []
         for (active_hinge1, active_hinge2) in connections:
