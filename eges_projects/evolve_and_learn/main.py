@@ -295,7 +295,7 @@ def read_args():
     controllers_string = 'adaptable' if config.CONTROLLERS == -1 else config.CONTROLLERS
     config.DATABASE_FILE = ("learn-" + str(args.learn) + "_controllers-" + str(controllers_string) + "_survivorselect-"
                             + args.survivorselect + "_parentselect-" + args.parentselect + "_inheritsamples-" + args.inheritsamples + "_environment-"
-                            + args.environment + "_" + str(args.repetition) + ".sqlite")
+                            + args.environment + extra + "_" + str(args.repetition) + ".sqlite")
 
 
 def main() -> None:
