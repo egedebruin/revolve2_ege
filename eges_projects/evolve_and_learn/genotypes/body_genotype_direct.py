@@ -28,6 +28,15 @@ class BodyDeveloper:
         'back': 'back',
         'attachment': 'attachment'
     }
+    to_make_it_even_more_complicated = {
+        'left': 'left',
+        'up': 'down',
+        'front': 'front',
+        'right': 'right',
+        'down': 'up',
+        'back': 'back',
+        'attachment': 'attachment'
+    }
     not_straight_direction = {
         'left': 'up',
         'up': 'left',
@@ -59,7 +68,9 @@ class BodyDeveloper:
                     correct_direction = direction
                     if current_module.central and not straight:
                         correct_direction = self.not_straight_direction[direction]
-                    if module_mirror:
+                    elif module_mirror and not straight:
+                        correct_direction = self.to_make_it_even_more_complicated[direction]
+                    elif module_mirror:
                         correct_direction = self.reverse_direction[correct_direction]
 
                     setattr(current_body_module, correct_direction, new_body_module)
@@ -167,6 +178,17 @@ class ModuleGenotype:
             nodes += module.get_amount_hinges() * len(directions)
 
         return nodes
+
+    def add_random_module_to_random_connection(self, rng: np.random.Generator, brain: BrainGenotype):
+        direction_chooser = rng.choice(range(len(self.get_possible_children())))
+        chosen_direction = self.get_possible_children()[direction_chooser]
+        if tuple(chosen_direction) in self.children.keys():
+            self.children[tuple(chosen_direction)].add_random_module_to_random_connection(rng, brain)
+            return
+        module_to_add = self.choose_random_module(rng, brain)
+        if self.central and len(chosen_direction) == 1:
+            module_to_add.central = True
+        self.children[tuple(chosen_direction)] = module_to_add
 
     def remove_node(self, index):
         for direction, module in self.children.items():
@@ -383,9 +405,10 @@ class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
         body = CoreGenotype(0.0)
         current_number_of_modules = 0
         while current_number_of_modules < number_of_modules:
-            amount_possible_connections = body.get_amount_possible_connections()
-            connection_to_add = rng.integers(1, amount_possible_connections + 1)
-            body.add_random_module_to_connection(connection_to_add, rng, brain)
+            # amount_possible_connections = body.get_amount_possible_connections()
+            # connection_to_add = rng.integers(1, amount_possible_connections + 1)
+            # body.add_random_module_to_connection(connection_to_add, rng, brain)
+            body.add_random_module_to_random_connection(rng, brain)
             current_number_of_modules = body.get_amount_modules()
 
         body.reverse_phase = rng.choice(body.possible_phase_differences)
@@ -402,9 +425,10 @@ class BodyGenotypeDirect(orm.MappedAsDataclass, BodyGenotype):
 
             if mutation_chooser < 0.5:
                 for _ in range(rng.integers(1, config.MAX_ADD_MODULES + 1)):
-                    amount_possible_connections = body.get_amount_possible_connections()
-                    connection_to_add = rng.integers(1, amount_possible_connections + 1)
-                    body.add_random_module_to_connection(connection_to_add, rng, brain)
+                    # amount_possible_connections = body.get_amount_possible_connections()
+                    # connection_to_add = rng.integers(1, amount_possible_connections + 1)
+                    # body.add_random_module_to_connection(connection_to_add, rng, brain)
+                    body.add_random_module_to_random_connection(rng, brain)
                 mutation_accepted = body.get_amount_modules() < config.MAX_NUMBER_OF_MODULES * 1.1
             elif mutation_chooser <= 1:
                 for _ in range(rng.integers(1, config.MAX_DELETE_MODULES + 1)):
