@@ -8,7 +8,7 @@ import numpy as np
 from bayes_opt import acquisition, BayesianOptimization
 from sklearn.gaussian_process.kernels import Matern
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import BayesianRidge
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -249,7 +249,7 @@ def get_prior_information(genotype, rng, sorted_inherited_experience):
         objective_values.append(objective_value)
     bonus_optimizer.suggest()
     poly = PolynomialFeatures(2)
-    model = LinearRegression()
+    model = BayesianRidge()
     x_poly = poly.fit_transform(bonus_optimizer._gp.X_train_)
     model.fit(x_poly, bonus_optimizer._gp.y_train_)
     coefficients = model.coef_
