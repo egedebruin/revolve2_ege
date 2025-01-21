@@ -259,7 +259,7 @@ class ModuleGenotype:
     def choose_random_module(self, rng: np.random.Generator, brain: BrainGenotype):
         module_chooser = rng.random()
 
-        if module_chooser < 0.5:
+        if module_chooser < 0.7:
             module = BrickGenotype(0.0)
         else:
             module = HingeGenotype(rotation = rng.choice([RightAngles.DEG_0.value, RightAngles.DEG_90.value]))
