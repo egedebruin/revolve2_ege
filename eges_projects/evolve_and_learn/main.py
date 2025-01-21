@@ -6,9 +6,10 @@ from argparse import ArgumentParser
 
 import numpy as np
 from bayes_opt import acquisition, BayesianOptimization
+from matplotlib import pyplot as plt
 from sklearn.gaussian_process.kernels import Matern
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import BayesianRidge
+from sklearn.linear_model import BayesianRidge, Ridge, LinearRegression
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -193,8 +194,11 @@ def learn_genotype(genotype, evaluator, rng):
         optimizer.set_gp_params(alpha=[])
 
     optimizer.set_gp_params(kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
-    if config.INHERIT_SAMPLES and config.NUM_REDO_INHERITED_SAMPLES == 0:
+    if config.INHERIT_SAMPLES:
+        i = 0
         for inherited_experience_sample, objective_value, inheritance_number in sorted_inherited_experience:
+            if i < config.NUM_REDO_INHERITED_SAMPLES:
+                continue
             alphas = np.append(alphas, config.INHERITED_ALPHA)
             optimizer.register(params=inherited_experience_sample, target=objective_value)
             optimizer.set_gp_params(alpha=alphas)
