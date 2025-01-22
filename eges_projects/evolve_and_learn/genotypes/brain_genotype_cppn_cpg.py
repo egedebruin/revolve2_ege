@@ -1,10 +1,10 @@
 import numpy as np
 
-from genotypes.brain_genotype_simple import BrainGenotype as BrainGenotypeSimple
+from genotypes.brain_genotype_cpg import BrainGenotype as BrainGenotypeCpg
 from revolve2.modular_robot.body.base import ActiveHinge
 
 
-class BrainGenotype(BrainGenotypeSimple):
+class BrainGenotype(BrainGenotypeCpg):
 
     @classmethod
     def initialize_brain(cls, rng) -> 'BrainGenotype':

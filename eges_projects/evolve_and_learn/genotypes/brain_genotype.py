@@ -31,15 +31,11 @@ class BrainGenotype(orm.MappedAsDataclass):
     def initialize_brain(cls, rng) -> 'BrainGenotype':
         number_of_brains = config.CONTROLLERS
         if config.CONTROLLERS == -1:
-            number_of_brains = 1
+            number_of_brains = 0
 
         brain = {}
         for i in range(number_of_brains):
-            random_int = (int(rng.integers(0, 2 ** 64, dtype=np.uint64)) << 64) | int(
-                rng.integers(0, 2 ** 64, dtype=np.uint64))
-            new_uuid = uuid.UUID(int=random_int)
-            if config.CONTROLLERS != -1:
-                new_uuid = uuid.UUID(int=i)
+            new_uuid = uuid.UUID(int=i)
             brain[new_uuid] = np.array(rng.random(cls.number_of_parameters_per_active_hinge))
 
         return BrainGenotype(brain=brain)

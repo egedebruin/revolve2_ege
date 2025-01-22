@@ -12,13 +12,14 @@ from .base import Base
 import config
 from genotypes.body_genotype_direct import BodyGenotypeDirect
 from genotypes.body_genotype_cppn import BodyGenotypeCppn
-from genotypes.brain_genotype_simple import BrainGenotype
-from genotypes.brain_genotype_cppn_simple import BrainGenotype as BrainGenotypeCppn
+from genotypes.brain_genotype_simple import BrainGenotype as BrainGenotypeSimple
+from genotypes.brain_genotype_cppn_simple import BrainGenotype as BrainGenotypeCppnSimple
 from genotypes.brain_genotype_cpg import BrainGenotype as BrainGenotypeCpg
+from genotypes.brain_genotype_cppn_cpg import BrainGenotype as BrainGenotypeCppnCpg
 from revolve2.experimentation.database import HasId
 
 
-class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
+class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotypeSimple):
     """SQLAlchemy model for a genotype for a modular robot body and brain."""
 
     __tablename__ = "genotype"
@@ -84,7 +85,7 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotype):
         child1_body, child2_body = BodyGenotypeDirect.crossover_body(parent1, parent2, rng)
 
         if config.CONTROLLERS != -1:
-            child1_brain, child2_brain = BrainGenotype.crossover_brain(parent1, parent2, rng)
+            child1_brain, child2_brain = BrainGenotypeSimple.crossover_brain(parent1, parent2, rng)
             return Genotype(body=child1_body.body, brain=child1_brain.brain), Genotype(body=child2_body.body, brain=child2_brain.brain)
 
         all_brains = {**parent1.brain, **parent2.brain}

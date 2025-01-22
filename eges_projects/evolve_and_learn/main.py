@@ -148,11 +148,11 @@ def learn_population(genotypes, evaluator, dbengine, rng):
 def learn_genotype(genotype, evaluator, rng):
     # We get the brain uuids from the developed body, because if it is too big we don't want to learn unused uuids
     developed_body = genotype.develop_body()
+    genotype.update_brain_parameters(developed_body, rng)
     brain_uuids = list(genotype.brain.keys())
-    genotype.update_brain_parameters(brain_uuids, rng)
 
     if len(brain_uuids) == 0:
-        empty_learn_genotype = LearnGenotype(brain=genotype.brain, body=genotype.body)
+        empty_learn_genotype = LearnGenotype(brain=genotype.brain)
         return 0, [LearnIndividual(morphology_genotype=genotype, genotype=empty_learn_genotype, objective_value=0, generation_index=0)]
 
     best_objective_value = None
@@ -194,7 +194,7 @@ def learn_genotype(genotype, evaluator, rng):
         optimizer.set_gp_params(alpha=[])
 
     optimizer.set_gp_params(kernel=Matern(nu=config.NU, length_scale=config.LENGTH_SCALE, length_scale_bounds="fixed"))
-    if config.INHERIT_SAMPLES:
+    if config.INHERIT_SAMPLES and config.NUM_REDO_INHERITED_SAMPLES == 0:
         i = 0
         for inherited_experience_sample, objective_value, inheritance_number in sorted_inherited_experience:
             if i < config.NUM_REDO_INHERITED_SAMPLES:
