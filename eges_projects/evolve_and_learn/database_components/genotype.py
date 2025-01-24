@@ -19,7 +19,7 @@ from genotypes.brain_genotype_cppn_cpg import BrainGenotype as BrainGenotypeCppn
 from revolve2.experimentation.database import HasId
 
 
-class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotypeSimple):
+class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotypeCpg):
     """SQLAlchemy model for a genotype for a modular robot body and brain."""
 
     __tablename__ = "genotype"

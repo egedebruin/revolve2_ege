@@ -14,7 +14,7 @@ from revolve2.modular_robot import ModularRobot
 import sqlalchemy.orm as orm
 
 
-class LearnGenotype(Base, HasId, BrainGenotypeSimple):
+class LearnGenotype(Base, HasId, BrainGenotypeCpg):
     """A genotype that is an array of parameters."""
 
     __tablename__ = "learn_genotype"
