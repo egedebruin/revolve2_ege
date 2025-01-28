@@ -81,7 +81,7 @@ class BodyDeveloper:
                         continue
 
                     self.grid.append(grid_position)
-                    new_straight = straight if new_module.rotation == 0.0 else not straight
+                    new_straight = straight if new_module.rotation == 0.0 or not new_module.central else not straight
                     new_straight = not new_straight if current_module.type == 'core' and direction == 'down' else new_straight
                     self.queue.append((new_module, new_body_module, direction_mirror, new_straight))
 
