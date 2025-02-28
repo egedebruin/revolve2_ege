@@ -43,19 +43,29 @@ def main(inherit_samples, environment, repetition):
 
         with Session(dbengine) as ses:
             genotypes = ses.execute(
-                select(Genotype._serialized_body, Genotype.id)
+                select(Genotype._serialized_body, Genotype.id, Generation.generation_index)
                 .join_from(Generation, Population, Generation.population_id == Population.id)
                 .join_from(Population, Individual, Population.id == Individual.population_id)
                 .join_from(Individual, Genotype, Individual.genotype_id == Genotype.id)
-                .where(Generation.generation_index <= 600)
+                .where(Generation.generation_index <= 501)
             ).fetchall()
+
+        # Deduplicate manually, preserving order
+        unique_genotypes = {}
+        for serialized_body, genotype_id, generation_index in genotypes:
+            if genotype_id not in unique_genotypes:
+                unique_genotypes[genotype_id] = (serialized_body, generation_index)
+
+        # Convert to a list of tuples
+        genotypes = [(genotype_id, serialized_body, generation_index) for
+                     genotype_id, (serialized_body, generation_index) in unique_genotypes.items()]
 
         with concurrent.futures.ProcessPoolExecutor(
                 max_workers=100
         ) as executor:
             futures = []
-            for serialized_body, genotype_id in genotypes:
-                futures.append(executor.submit(sample, evaluator, serialized_body, genotype_id))
+            for serialized_body, genotype_id, generation_index in genotypes:
+                futures.append(executor.submit(sample, evaluator, serialized_body, genotype_id, generation_index))
 
         for future in futures:
             samples, genotype_id = future.result()
@@ -65,7 +75,7 @@ def main(inherit_samples, environment, repetition):
                     session.add(new_data)
                     session.commit()
 
-def sample(evaluator, serialized_body, genotype_id):
+def sample(evaluator, serialized_body, genotype_id, generation_index):
     result = []
 
     body = CoreGenotype(0.0).deserialize(json.loads(serialized_body))
@@ -74,7 +84,7 @@ def sample(evaluator, serialized_body, genotype_id):
     body_developer.develop()
     brain_uuids = body.check_for_brains()
 
-    for i in range(30):
+    for i in range(1):
         next_point = {}
         for key in brain_uuids:
             next_point['amplitude_' + str(key)] = random.random()
@@ -87,6 +97,7 @@ def sample(evaluator, serialized_body, genotype_id):
         modular_robot = new_learn_genotype.develop(body_developer.body)
         objective_value = evaluator.evaluate(modular_robot)
         result.append((i, objective_value))
+    print(generation_index)
     return result, genotype_id
 
 if __name__ == "__main__":
