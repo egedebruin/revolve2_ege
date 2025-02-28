@@ -84,7 +84,7 @@ def sample(evaluator, serialized_body, genotype_id, generation_index):
     body_developer.develop()
     brain_uuids = body.check_for_brains()
 
-    for i in range(1):
+    for i in range(30):
         next_point = {}
         for key in brain_uuids:
             next_point['amplitude_' + str(key)] = random.random()
