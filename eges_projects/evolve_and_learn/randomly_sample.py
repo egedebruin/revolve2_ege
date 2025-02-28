@@ -64,7 +64,7 @@ def main(inherit_samples, environment, repetition):
                 max_workers=100
         ) as executor:
             futures = []
-            for serialized_body, genotype_id, generation_index in genotypes:
+            for genotype_id, serialized_body, generation_index in genotypes:
                 futures.append(executor.submit(sample, evaluator, serialized_body, genotype_id, generation_index))
 
         for future in futures:
