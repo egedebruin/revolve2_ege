@@ -18,7 +18,7 @@ class BrainGenotype(orm.MappedAsDataclass):
 
     The distribution are saved in the database as string of semicolon seperated floats.
     """
-    number_of_parameters_per_active_hinge = 3
+    number_of_parameters_per_active_hinge = 4
     brain: dict[uuid.UUID, npt.NDArray[np.float_]]
     _serialized_brain: orm.Mapped[str] = orm.mapped_column(
         "serialized_brain", init=False, nullable=False
