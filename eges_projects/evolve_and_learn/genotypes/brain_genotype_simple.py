@@ -48,6 +48,15 @@ class BrainGenotype(AbstractBrainGenotype):
             next_point['offset_' + str(key)] = self.brain[key][2]
         return next_point
 
+    def get_random_next_point(self, rng):
+        brain_uuids = list(self.brain.keys())
+        next_point = {}
+        for key in brain_uuids:
+            next_point['amplitude_' + str(key)] = rng.random()
+            next_point['phase_' + str(key)] = rng.random()
+            next_point['offset_' + str(key)] = rng.random()
+        return next_point
+
     def next_point_to_brain(self, next_point, brain_uuids):
         for brain_uuid in brain_uuids:
             self.brain[brain_uuid] = np.array(
