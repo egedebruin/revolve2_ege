@@ -21,6 +21,9 @@ def main():
     parser.add_argument("--length-scale", required=True)
     parser.add_argument("--do-random", required=True)
     args = parser.parse_args()
+
+    print(f"Received Arguments: {args}")
+
     kappa = float(args.kappa)
     alpha = float(args.alpha)
     length_scale = float(args.length_scale)
