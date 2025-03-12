@@ -23,8 +23,8 @@ class Genotype(Base, HasId, BodyGenotypeDirect, BrainGenotypeSimple):
     """SQLAlchemy model for a genotype for a modular robot body and brain."""
 
     __tablename__ = "genotype"
-    experience: list = field(default_factory=lambda: [])
-    inherited_experience: list = field(default_factory=lambda: [])
+    # experience: list = field(default_factory=lambda: [])
+    # inherited_experience: list = field(default_factory=lambda: [])
     parent_1_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
     parent_2_genotype_id: orm.Mapped[int] = orm.mapped_column(default=-1)
     mutation_parameter: orm.Mapped[float] = orm.mapped_column(nullable=True, default=None)

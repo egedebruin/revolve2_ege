@@ -8,12 +8,42 @@ from bayes_opt import BayesianOptimization, acquisition
 from sklearn.gaussian_process.kernels import Matern
 
 import config
+from database_components.generation import Generation
 from database_components.genotype import Genotype
+from database_components.individual import Individual
 from database_components.learn_genotype import LearnGenotype
+from database_components.population import Population
 from evaluator import Evaluator
+from revolve2.experimentation.database import open_database_sqlite, OpenMethod
 from revolve2.experimentation.rng import seed_from_time, make_rng
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 import sys
 
+def get_best_genotypes():
+    genotypes = []
+    for inherit_samples in ['-1', '5', '0']:
+        for environment in ['flat', 'noisy', 'hills', 'steps']:
+            for repetition in range(1, 21):
+                if environment == 'noisy' and inherit_samples == '5' and repetition == 4:
+                    continue
+                database_name = f"learn-30_controllers-adaptable_survivorselect-newest_parentselect-tournament_inheritsamples-{inherit_samples}_environment-{environment}_{repetition}.sqlite"
+                dbengine = open_database_sqlite(
+                    'results/new_big/' + database_name, open_method=OpenMethod.OPEN_IF_EXISTS
+                )
+
+                with Session(dbengine) as ses:
+                    genotype = ses.execute(
+                        select(Genotype)
+                        .join_from(Generation, Population, Generation.population_id == Population.id)
+                        .join_from(Population, Individual, Population.id == Individual.population_id)
+                        .join_from(Individual, Genotype, Individual.genotype_id == Genotype.id)
+                        .where(Generation.generation_index <= 501)
+                        .order_by(Individual.objective_value.desc())
+                        .limit(1)
+                    ).fetchone()
+                genotypes.append(genotype[0])
+    return genotypes
 
 def main():
     parser = ArgumentParser()
@@ -30,19 +60,21 @@ def main():
     length_scale = float(args.length_scale)
     do_random = args.do_random == '1'
 
-    number_of_robots = 100
+    # number_of_robots = 100
     number_of_iterations = 30
     environments = ['flat', 'noisy', 'hills', 'steps']
 
     rng_seed = 1111972312
     rng = make_rng(rng_seed)
 
-    random_genotypes = [
-        Genotype.initialize(
-            rng=rng,
-        )
-        for _ in range(number_of_robots)
-    ]
+    # random_genotypes = [
+    #     Genotype.initialize(
+    #         rng=rng,
+    #     )
+    #     for _ in range(number_of_robots)
+    # ]
+
+    best_genotypes = get_best_genotypes()
 
     evaluators = []
     for environment in environments:
@@ -50,11 +82,11 @@ def main():
         evaluators.append(Evaluator(headless=True, num_simulators=1))
 
     with concurrent.futures.ProcessPoolExecutor(
-            max_workers=10
+            max_workers=24
     ) as executor:
         futures = []
         robot_id = 1
-        for genotype in random_genotypes:
+        for genotype in best_genotypes:
             futures.append(executor.submit(test_robot, genotype, evaluators, number_of_iterations, robot_id, rng, kappa, alpha, length_scale, do_random))
             robot_id += 1
 
@@ -65,7 +97,7 @@ def main():
         dfs.append(df)
     result_df = pd.concat(dfs)
     result_df['rng'] = rng_seed
-    result_df.to_csv(f"random_robots_learn_{kappa}_{alpha}_{length_scale}_{do_random}.csv", index=False)
+    result_df.to_csv(f"best_robots_learn_{kappa}_{alpha}_{length_scale}_{do_random}.csv", index=False)
 
 def test_robot(genotype, evaluators, number_of_iterations, robot_id, rng, kappa, alpha, length_scale, do_random):
     print(f"Robot {robot_id} started", flush=True)
