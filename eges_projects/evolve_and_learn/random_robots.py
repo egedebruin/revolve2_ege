@@ -30,7 +30,7 @@ def main():
     length_scale = float(args.length_scale)
     do_random = args.do_random == '1'
 
-    number_of_robots = 1000
+    number_of_robots = 100
     number_of_iterations = 30
     environments = ['flat', 'noisy', 'hills', 'steps']
 
@@ -50,7 +50,7 @@ def main():
         evaluators.append(Evaluator(headless=True, num_simulators=1))
 
     with concurrent.futures.ProcessPoolExecutor(
-            max_workers=100
+            max_workers=10
     ) as executor:
         futures = []
         robot_id = 1
@@ -89,6 +89,8 @@ def test_robot(genotype, evaluators, number_of_iterations, robot_id, rng, kappa,
     developed_body = genotype.develop_body()
     brain_uuids = list(genotype.brain.keys())
     for i in range(number_of_iterations):
+        print(f"Robot {robot_id}, Iteration number: {i}", flush=True)
+        sys.stdout.flush()
         objective_values = []
         for optimizer, evaluator in zip(optimizers, evaluators):
             if i < 5 and do_random:
