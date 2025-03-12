@@ -12,6 +12,7 @@ from database_components.genotype import Genotype
 from database_components.learn_genotype import LearnGenotype
 from evaluator import Evaluator
 from revolve2.experimentation.rng import seed_from_time, make_rng
+import sys
 
 
 def main():
@@ -67,7 +68,8 @@ def main():
     result_df.to_csv(f"random_robots_learn_{kappa}_{alpha}_{length_scale}_{do_random}.csv", index=False)
 
 def test_robot(genotype, evaluators, number_of_iterations, robot_id, rng, kappa, alpha, length_scale, do_random):
-    print(f"Robot {robot_id} started")
+    print(f"Robot {robot_id} started", flush=True)
+    sys.stdout.flush()
     optimizers = []
     for _ in evaluators:
         optimizer = BayesianOptimization(
@@ -103,7 +105,8 @@ def test_robot(genotype, evaluators, number_of_iterations, robot_id, rng, kappa,
             objective_values.append(objective_value)
             optimizer.register(params=next_point, target=objective_value)
         result.append(objective_values)
-    print(f"Robot {robot_id} finished")
+    print(f"Robot {robot_id} finished", flush=True)
+    sys.stdout.flush()
     return pd.DataFrame(result, columns=['flat', 'noisy', 'hills', 'steps']), robot_id
 
 if __name__ == '__main__':
