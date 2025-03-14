@@ -16,6 +16,7 @@ from revolve2.modular_robot_simulation import (
 from revolve2.simulators.mujoco_simulator import LocalSimulator
 from revolve2.standards import fitness_functions, terrains
 from revolve2.standards.simulation_parameters import make_standard_batch_parameters
+from sine_brain import SineBrain
 
 
 class Evaluator:
@@ -23,17 +24,15 @@ class Evaluator:
 
     _simulator: LocalSimulator
     _terrain: Terrain
-    _cpg_network_structure: CpgNetworkStructure
+    _active_hinges: list[ActiveHinge]
     _body: Body
-    _output_mapping: list[tuple[int, ActiveHinge]]
 
     def __init__(
         self,
         headless: bool,
         num_simulators: int,
-        cpg_network_structure: CpgNetworkStructure,
+        active_hinges: list[ActiveHinge],
         body: Body,
-        output_mapping: list[tuple[int, ActiveHinge]],
     ) -> None:
         """
         Initialize this object.
@@ -48,9 +47,8 @@ class Evaluator:
             headless=headless, num_simulators=num_simulators
         )
         self._terrain = terrains.flat()
-        self._cpg_network_structure = cpg_network_structure
+        self._active_hinges = active_hinges
         self._body = body
-        self._output_mapping = output_mapping
 
     def evaluate(
         self,
@@ -65,18 +63,23 @@ class Evaluator:
         :returns: Fitnesses of the solutions.
         """
         # Create robots from the brain parameters.
-        robots = [
-            ModularRobot(
+        robots = []
+        for params in solutions:
+            amplitudes = params[:len(self._active_hinges)]
+            phases = params[len(self._active_hinges):len(self._active_hinges) * 2] * 2 * math.pi
+            offsets = params[len(self._active_hinges) * 2:] - 0.5
+
+            print()
+            print(amplitudes)
+            print(phases)
+            print(offsets)
+            print()
+            sine_brain = SineBrain(self._active_hinges, amplitudes, phases, offsets)
+            robots.append(ModularRobot(
                 body=self._body,
-                brain=BrainCpgNetworkStatic.uniform_from_params(
-                    params=params,
-                    cpg_network_structure=self._cpg_network_structure,
-                    initial_state_uniform=math.sqrt(2) * 0.5,
-                    output_mapping=self._output_mapping,
-                ),
+                brain=sine_brain,
+                )
             )
-            for params in solutions
-        ]
 
         # Create the scenes.
         scenes = []

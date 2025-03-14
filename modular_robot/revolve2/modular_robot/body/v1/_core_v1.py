@@ -15,8 +15,8 @@ class CoreV1(Core):
         """
         super().__init__(
             rotation=rotation,
-            bounding_box=Vector3([0.089, 0.089, 0.089]),
-            mass=0.250,
-            child_offset=0.089 / 2.0,
+            bounding_box=Vector3([0.06485, 0.06485, 0.06485]),
+            mass=0.088,
+            child_offset=0.06485 / 2.0,
             sensors=[],
         )

@@ -46,7 +46,7 @@ def main() -> None:
     options.set("bounds", [-1.0, 1.0])
     # The cma package uses its own internal rng.
     # Instead of creating our own numpy rng, we use our seed to initialize cma.
-    rng_seed = seed_from_time() % 2**32  # Cma seed must be smaller than 2**32.
+    rng_seed = 2  # Cma seed must be smaller than 2**32.
     options.set("seed", rng_seed)
     opt = cma.CMAEvolutionStrategy(initial_mean, config.INITIAL_STD, options)
 

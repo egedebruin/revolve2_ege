@@ -10,10 +10,46 @@ from sqlalchemy.orm import Session
 
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
+from revolve2.modular_robot.body import RightAngles
 from revolve2.modular_robot.body.base import ActiveHinge
+from revolve2.modular_robot.body.v1 import BodyV1, ActiveHingeV1, BrickV1
 from revolve2.modular_robot.brain.cpg import (
     active_hinges_to_cpg_network_structure_neighbor,
 )
+
+def make_body() -> BodyV1:
+    """
+    Create a body for the robot.
+
+    :returns: The created body.
+    """
+    # A modular robot body follows a 'tree' structure.
+    # The 'Body' class automatically creates a center 'core'.
+    # From here, other modular can be attached.
+    # Modules can be attached in a rotated fashion.
+    # This can be any angle, although the original design takes into account only multiples of 90 degrees.
+    # You should explore the "standards" module as it contains lots of preimplemented elements you can use!
+    body = BodyV1()
+    body.core_v1.front = ActiveHingeV1(rotation=RightAngles.DEG_90)
+    body.core_v1.back = ActiveHingeV1(rotation=RightAngles.DEG_90)
+    body.core_v1.left = ActiveHingeV1(rotation=RightAngles.DEG_90)
+    body.core_v1.right = ActiveHingeV1(rotation=RightAngles.DEG_90)
+
+    body.core_v1.front.attachment = BrickV1(rotation=RightAngles.DEG_270)
+    body.core_v1.back.attachment = BrickV1(rotation=RightAngles.DEG_270)
+    body.core_v1.left.attachment = BrickV1(rotation=RightAngles.DEG_270)
+    body.core_v1.right.attachment = BrickV1(rotation=RightAngles.DEG_270)
+
+    body.core_v1.front.attachment.front = ActiveHingeV1(rotation=RightAngles.DEG_0)
+    body.core_v1.back.attachment.front = ActiveHingeV1(rotation=RightAngles.DEG_0)
+    body.core_v1.left.attachment.front = ActiveHingeV1(rotation=RightAngles.DEG_0)
+    body.core_v1.right.attachment.front = ActiveHingeV1(rotation=RightAngles.DEG_0)
+
+    body.core_v1.front.attachment.front.attachment = BrickV1(rotation=RightAngles.DEG_0)
+    body.core_v1.back.attachment.front.attachment = BrickV1(rotation=RightAngles.DEG_0)
+    body.core_v1.left.attachment.front.attachment = BrickV1(rotation=RightAngles.DEG_0)
+    body.core_v1.right.attachment.front.attachment = BrickV1(rotation=RightAngles.DEG_0)
+    return body
 
 
 def main() -> None:
@@ -43,19 +79,15 @@ def main() -> None:
     logging.info(f"Best parameters: {parameters}")
 
     # Prepare the body and brain structure
-    active_hinges = config.BODY.find_modules_of_type(ActiveHinge)
-    (
-        cpg_network_structure,
-        output_mapping,
-    ) = active_hinges_to_cpg_network_structure_neighbor(active_hinges)
+    maked_body = make_body()
+    active_hinges = maked_body.find_modules_of_type(ActiveHinge)
 
     # Create the evaluator.
     evaluator = Evaluator(
         headless=False,
         num_simulators=1,
-        cpg_network_structure=cpg_network_structure,
-        body=config.BODY,
-        output_mapping=output_mapping,
+        active_hinges=active_hinges,
+        body=maked_body,
     )
 
     # Show the robot.

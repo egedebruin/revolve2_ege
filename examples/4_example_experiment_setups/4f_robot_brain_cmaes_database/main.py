@@ -19,10 +19,46 @@ from sqlalchemy.orm import Session
 from revolve2.experimentation.database import OpenMethod, open_database_sqlite
 from revolve2.experimentation.logging import setup_logging
 from revolve2.experimentation.rng import seed_from_time
+from revolve2.modular_robot.body import RightAngles
 from revolve2.modular_robot.body.base import ActiveHinge
+from revolve2.modular_robot.body.v1 import BodyV1, ActiveHingeV1, BrickV1
 from revolve2.modular_robot.brain.cpg import (
     active_hinges_to_cpg_network_structure_neighbor,
 )
+
+def make_body() -> BodyV1:
+    """
+    Create a body for the robot.
+
+    :returns: The created body.
+    """
+    # A modular robot body follows a 'tree' structure.
+    # The 'Body' class automatically creates a center 'core'.
+    # From here, other modular can be attached.
+    # Modules can be attached in a rotated fashion.
+    # This can be any angle, although the original design takes into account only multiples of 90 degrees.
+    # You should explore the "standards" module as it contains lots of preimplemented elements you can use!
+    body = BodyV1()
+    body.core_v1.front = ActiveHingeV1(rotation=RightAngles.DEG_90)
+    body.core_v1.back = ActiveHingeV1(rotation=RightAngles.DEG_90)
+    body.core_v1.left = ActiveHingeV1(rotation=RightAngles.DEG_90)
+    body.core_v1.right = ActiveHingeV1(rotation=RightAngles.DEG_90)
+
+    body.core_v1.front.attachment = BrickV1(rotation=RightAngles.DEG_270)
+    body.core_v1.back.attachment = BrickV1(rotation=RightAngles.DEG_270)
+    body.core_v1.left.attachment = BrickV1(rotation=RightAngles.DEG_270)
+    body.core_v1.right.attachment = BrickV1(rotation=RightAngles.DEG_270)
+
+    body.core_v1.front.attachment.front = ActiveHingeV1(rotation=RightAngles.DEG_0)
+    body.core_v1.back.attachment.front = ActiveHingeV1(rotation=RightAngles.DEG_0)
+    body.core_v1.left.attachment.front = ActiveHingeV1(rotation=RightAngles.DEG_0)
+    body.core_v1.right.attachment.front = ActiveHingeV1(rotation=RightAngles.DEG_0)
+
+    body.core_v1.front.attachment.front.attachment = BrickV1(rotation=RightAngles.DEG_0)
+    body.core_v1.back.attachment.front.attachment = BrickV1(rotation=RightAngles.DEG_0)
+    body.core_v1.left.attachment.front.attachment = BrickV1(rotation=RightAngles.DEG_0)
+    body.core_v1.right.attachment.front.attachment = BrickV1(rotation=RightAngles.DEG_0)
+    return body
 
 
 def run_experiment(dbengine: Engine) -> None:
@@ -44,32 +80,26 @@ def run_experiment(dbengine: Engine) -> None:
         session.add(experiment)
         session.commit()
 
+    maked_body = make_body()
     # Find all active hinges in the body
-    active_hinges = config.BODY.find_modules_of_type(ActiveHinge)
-
-    # Create a structure for the CPG network from these hinges.
-    # This also returns a mapping between active hinges and the index of there corresponding cpg in the network.
-    (
-        cpg_network_structure,
-        output_mapping,
-    ) = active_hinges_to_cpg_network_structure_neighbor(active_hinges)
+    active_hinges = maked_body.find_modules_of_type(ActiveHinge)
 
     # Intialize the evaluator that will be used to evaluate robots.
     evaluator = Evaluator(
         headless=True,
         num_simulators=config.NUM_SIMULATORS,
-        cpg_network_structure=cpg_network_structure,
-        body=config.BODY,
-        output_mapping=output_mapping,
+        active_hinges=active_hinges,
+        body=maked_body,
     )
 
     # Initial parameter values for the brain.
-    initial_mean = cpg_network_structure.num_connections * [0.5]
+    initial_mean = (len(active_hinges) * 3) * [0.5]
 
     # Initialize the cma optimizer.
     options = cma.CMAOptions()
-    options.set("bounds", [-1.0, 1.0])
+    options.set("bounds", [0.0, 1.0])
     options.set("seed", rng_seed)
+    options.set("popsize", config.NUM_SIMULATORS)
     opt = cma.CMAEvolutionStrategy(initial_mean, config.INITIAL_STD, options)
 
     # Run cma for the defined number of generations.
