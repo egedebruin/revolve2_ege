@@ -68,12 +68,6 @@ class Evaluator:
             amplitudes = params[:len(self._active_hinges)]
             phases = params[len(self._active_hinges):len(self._active_hinges) * 2] * 2 * math.pi
             offsets = params[len(self._active_hinges) * 2:] - 0.5
-
-            print()
-            print(amplitudes)
-            print(phases)
-            print(offsets)
-            print()
             sine_brain = SineBrain(self._active_hinges, amplitudes, phases, offsets)
             robots.append(ModularRobot(
                 body=self._body,
