@@ -122,6 +122,8 @@ def _update_serialized_brain(
 def _deserialize_brain(target: BrainGenotype, context: orm.QueryContext) -> None:
     target.brain = {}
     for value in target._serialized_brain.split(';'):
+        if value == '':
+            continue
         new_uuid, values = value.split(':')
         string_list = values.split(',')
         if values == "":
