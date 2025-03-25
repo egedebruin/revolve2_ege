@@ -1,5 +1,5 @@
 """Configuration parameters for this example."""
-DATABASE_FILE = "test.sqlite"
+DATABASE_FILE = "results/test.sqlite"
 ENVIRONMENT = 'noisy'
 NUM_REPETITIONS = 1
 NUM_SIMULATORS = 1
@@ -18,7 +18,7 @@ MAX_DELETE_MODULES = 2
 MAX_NUMBER_OF_MODULES = 20
 
 KAPPA = 3  # Variation for Acquisition function (Low is exploitation, high is exploration)
-ALPHA = 1e-10  # Sampling noise
+ALPHA = 1  # Sampling noise
 INHERITED_ALPHA = 2
 NU = 5/2  # Smoothness parameter for Matern kernel (Low is rigid, high is smooth)
 LENGTH_SCALE = 0.2  # Also affects smoothness, but I'm not sure how (low is rigid, high is smooth (is it though??))
