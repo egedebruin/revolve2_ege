@@ -47,7 +47,7 @@ def main(inherit_samples, environment, repetition):
             'results/new_big/' + file_name, open_method=OpenMethod.OPEN_IF_EXISTS
         )
         dbengine_write = open_database_sqlite(
-            'results/random_long/' + file_name, open_method=OpenMethod.NOT_EXISTS_AND_CREATE
+            'results/random_long_circular/' + file_name, open_method=OpenMethod.NOT_EXISTS_AND_CREATE
         )
         Base.metadata.create_all(dbengine_write)
 
@@ -118,7 +118,8 @@ def sample(evaluator, serialized_body, genotype_id, iterations):
         next_point = {}
         for key in brain_uuids:
             next_point['amplitude_' + str(key)] = random.random()
-            next_point['phase_' + str(key)] = random.random()
+            next_point['phase_sin_' + str(key)] = random.random()
+            next_point['phase_cos_' + str(key)] = random.random()
             next_point['offset_' + str(key)] = random.random()
 
         new_learn_genotype = LearnGenotype(brain={})
