@@ -32,8 +32,8 @@ class RandomSample(Base):
     learn = Column(Integer)
 
 def main(inherit_samples, environment, repetition):
-    iterations = 400
-    robots = 1000
+    iterations = 500
+    robots = 100
     processes = 100
 
     config.ENVIRONMENT = environment
@@ -132,10 +132,6 @@ def sample(evaluator, serialized_body, genotype_id, iterations):
 
 def learn(evaluator, genotype, genotype_id, iterations):
     result = []
-
-    rng_seed = seed_from_time() % 2 ** 32
-    rng = make_rng(rng_seed)
-
     optimizer = BayesianOptimization(
         f=None,
         pbounds=genotype.get_p_bounds(),
@@ -149,7 +145,7 @@ def learn(evaluator, genotype, genotype_id, iterations):
     brain_uuids = list(genotype.brain.keys())
 
     for i in range(iterations):
-        next_point = genotype.get_random_next_point(rng)
+        next_point = optimizer.suggest()
         next_point = dict(sorted(next_point.items()))
         new_learn_genotype = LearnGenotype(brain={})
         new_learn_genotype.next_point_to_brain(next_point, brain_uuids)
