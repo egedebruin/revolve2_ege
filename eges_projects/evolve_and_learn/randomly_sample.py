@@ -33,8 +33,8 @@ class RandomSample(Base):
 
 def main(inherit_samples, environment, repetition):
     iterations = 500
-    robots = 100
-    processes = 100
+    robots = 20
+    processes = 20
 
     config.ENVIRONMENT = environment
     evaluator = Evaluator(headless=True, num_simulators=1)
