@@ -1,12 +1,16 @@
 import plots.plot_all as plot_all
-# import plots.plot_all_ssci as plot_all
 import plots.plot_fitness_tree_edit as plot_fitness_tree_edit
 import plots.plot_learn as plot_learn
 import plots.plot_ted_fitness as plot_ted_fitness
-# import plots.plot_modules as plot_modules
-# import plots.plot_parameters as plot_parameters
-# import plots.plot_mutation as plot_mutation
+import plots.plot_parameters as plot_parameters
 import plots.plot_first_parent as plot_first_parent
-# import plots.plot_tree_edit_distance as plot_tree_edit_distance
+import plots.plot_best_robot_lineage as plot_best_robot_lineage
+import plots.plot_random_robots as plot_random_robots
+import plots.plot_learn_delta as plot_learn_delta
+import plots.plot_learn_delta_inherit as plot_learn_delta_inherit
+import plots.plot_box_performance as plot_box_performance
+import plots.plot_parameters_from_file as plot_parameters_from_file
+import plots.plot_learn_long as plot_learn_long
+import plots.plot_movement_pattern as plot_movement_pattern
 
-plot_all.main()
+plot_movement_pattern.main()

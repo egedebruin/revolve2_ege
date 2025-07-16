@@ -63,9 +63,8 @@ def size(tree):
         return 0
     return 1 + sum(size(c) for c in list(tree.children.values()))
 
-def get_df(learn, controllers, environment, survivor_select, folder, inherit_samples):
+def get_df(learn, controllers, environment, survivor_select, folder, inherit_samples, generation):
     database_name = f"learn-{learn}_controllers-{controllers}_survivorselect-{survivor_select}_parentselect-tournament_inheritsamples-{inherit_samples}_environment-{environment}"
-    print(database_name)
     files = [file for file in os.listdir(folder) if file.startswith(database_name)]
     if len(files) == 0:
         return None
@@ -84,18 +83,19 @@ def get_df(learn, controllers, environment, survivor_select, folder, inherit_sam
             .join_from(Experiment, Generation, Experiment.id == Generation.experiment_id)
             .join_from(Generation, Population, Generation.population_id == Population.id)
             .join_from(Population, Individual, Population.id == Individual.population_id)
-            .join_from(Individual, Genotype, Individual.genotype_id == Genotype.id),
+            .join_from(Individual, Genotype, Individual.genotype_id == Genotype.id)
+            .where(Generation.generation_index <= generation)
+            .where(Generation.generation_index > generation - 11),
             dbengine,
         )
         df_mini = df_mini[df_mini['experiment_id'] == 1]
         df_mini['experiment_id'] = i
-        print(df_mini)
         dfs.append(df_mini)
         i += 1
     return pandas.concat(dfs)
 
-def plot_database(learn, environment, controllers, survivor_select, folder, popsize, inherit_samples):
-    df = get_df(learn, controllers, environment, survivor_select, folder, popsize, inherit_samples)
+def create_file_content_parent(environment, folder, inherit_samples, generation):
+    df = get_df('30', 'adaptable', environment, 'newest', folder, inherit_samples, generation)
 
     result = {
         'generation': [],
@@ -104,13 +104,14 @@ def plot_database(learn, environment, controllers, survivor_select, folder, pops
         'fitness': [],
         'parent_fitness': [],
         'inherit_samples': [],
-        'survivor_selection': [],
+        'environment': []
     }
     experiments = df['experiment_id'].nunique()
     for experiment_id in range(1, experiments + 1):
-        print(experiment_id)
         df_experiment = df.loc[df['experiment_id'] == experiment_id]
         for row in df_experiment.itertuples():
+            if row.generation_index != generation:
+                continue
             filtered_rows = df_experiment.loc[df_experiment['id'] == row.parent_1_genotype_id]
             if not filtered_rows.empty:
                 parent = filtered_rows.iloc[0]
@@ -122,11 +123,11 @@ def plot_database(learn, environment, controllers, survivor_select, folder, pops
                 result['fitness'].append(row.fitness)
                 result['parent_fitness'].append(parent['fitness'])
                 result['inherit_samples'].append(inherit_samples)
-                result['survivor_selection'].append(survivor_select)
-
+                result['environment'].append(environment)
+    print(generation)
     return pd.DataFrame(result)
 
-def create_file_content(folder, inherit_samples):
+def create_file_content_average(environment, folder, inherit_samples, generation):
     result = {
         'inherit_samples': [],
         'generation': [],
@@ -135,41 +136,43 @@ def create_file_content(folder, inherit_samples):
         'average_size': [],
         'max_tree_edit_distance': [],
         'max_size': [],
+        'environment': []
     }
-    df = get_df('30', 'adaptable', 'noisy', 'newest', folder, inherit_samples)
-    max_generations = df['generation_index'].nunique()
+    df = get_df('30', 'adaptable', environment, 'newest', folder, inherit_samples, generation)
     experiments = df['experiment_id'].nunique()
     for experiment_id in range(1, experiments + 1):
-        print(experiment_id)
-        for i in range(max_generations):
-            df_experiment = df.loc[df['experiment_id'] == experiment_id]
-            df_generation = df_experiment.loc[df_experiment['generation_index'] == i]
-            bodies = list(df_generation['serialized_body'])
+        df_experiment = df.loc[df['experiment_id'] == experiment_id]
+        df_generation = df_experiment.loc[df_experiment['generation_index'] == generation]
+        bodies = list(df_generation['serialized_body'])
 
-            tree_edit_distances = []
-            sizes = []
-            for j in range(len(bodies)):
-                sizes.append(size(CoreGenotype(0.0).deserialize(json.loads(bodies[j]))))
-                for k in range(j + 1, len(bodies)):
-                    tree_edit_distances.append(tree_edit_distance(CoreGenotype(0.0).deserialize(json.loads(bodies[j])), CoreGenotype(0.0).deserialize(json.loads(bodies[k]))))
-            result['inherit_samples'].append(inherit_samples)
-            result['generation'].append(i)
-            result['experiment_id'].append(experiment_id)
-            result['average_tree_edit_distance'].append(sum(tree_edit_distances) / len(tree_edit_distances))
-            result['average_size'].append(sum(sizes) / len(sizes))
-            result['max_tree_edit_distance'].append(max(tree_edit_distances))
-            result['max_size'].append(max(sizes))
+        tree_edit_distances = []
+        sizes = []
+        for j in range(len(bodies)):
+            sizes.append(size(CoreGenotype(0.0).deserialize(json.loads(bodies[j]))))
+            for k in range(j + 1, len(bodies)):
+                tree_edit_distances.append(tree_edit_distance(CoreGenotype(0.0).deserialize(json.loads(bodies[j])), CoreGenotype(0.0).deserialize(json.loads(bodies[k]))))
+        result['inherit_samples'].append(inherit_samples)
+        result['generation'].append(generation)
+        result['experiment_id'].append(experiment_id)
+        result['average_tree_edit_distance'].append(sum(tree_edit_distances) / len(tree_edit_distances))
+        result['average_size'].append(sum(sizes) / len(sizes))
+        result['max_tree_edit_distance'].append(max(tree_edit_distances))
+        result['max_size'].append(max(sizes))
+        result['environment'].append(environment)
 
+    print(generation)
     return pd.DataFrame(result)
 
 def main() -> None:
-    folder = "./results/0301"
+    folder = "./results/new_big"
     with concurrent.futures.ProcessPoolExecutor(
-            max_workers=1
+            max_workers=10
     ) as executor:
         futures = []
-        for inherit_samples in ['-2', '-1', '0', '5']:
-            futures.append(executor.submit(create_file_content, folder, inherit_samples))
+        for generation in range(500):
+            for environment in ['flat', 'noisy', 'hills', 'steps']:
+                for inherit_samples in ['-1', '0', '5']:
+                    futures.append(executor.submit(create_file_content_parent, environment, folder, inherit_samples, generation))
     dfs = [future.result() for future in futures]
 
-    pd.concat(dfs).to_csv("results/0301/ted-fitness-real.csv", index=False)
+    pd.concat(dfs).to_csv("results/ted-fitness-parent.csv", index=False)
