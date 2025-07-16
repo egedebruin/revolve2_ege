@@ -19,7 +19,6 @@ import config
 
 from genotypes.body_genotype_direct import CoreGenotype, BodyDeveloper
 from revolve2.experimentation.database import open_database_sqlite, OpenMethod
-from revolve2.experimentation.rng import seed_from_time, make_rng
 
 Base = declarative_base()
 
@@ -118,7 +117,8 @@ def sample(evaluator, serialized_body, genotype_id, iterations):
         next_point = {}
         for key in brain_uuids:
             next_point['amplitude_' + str(key)] = random.random()
-            next_point['phase_' + str(key)] = random.random()
+            next_point['phase_sin_' + str(key)] = random.random()
+            next_point['phase_cos_' + str(key)] = random.random()
             next_point['offset_' + str(key)] = random.random()
 
         new_learn_genotype = LearnGenotype(brain={})
