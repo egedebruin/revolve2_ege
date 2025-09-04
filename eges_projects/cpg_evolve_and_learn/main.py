@@ -188,7 +188,6 @@ def learn_genotype(genotype: Genotype, evaluator, rng: np.random.Generator):
     return best_objective_value, best_individual, learn_individuals
 
 def learn_genotype_cppn(genotype: Genotype, evaluator, rng: np.random.Generator):
-    print("LEARN")
     developed_body = genotype.develop_body()
     learn_individuals = []
     population = []
